@@ -13,8 +13,10 @@
   "description": "",
   "dependencies": {
     "@notionhq/client": "^0.4.13",
+    "cron": "^1.8.2",
     "discord.js": "^13.6.0",
     "dotenv": "^16.0.0",
+    "mongoose": "^6.2.3",
     "nodemon": "^2.0.15"
   }
 }
