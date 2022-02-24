@@ -1,24 +1,27 @@
 import { discord , channel} from './src/discord-handler.js'
 import  { notionClient }  from "./src/notion-handler.js";
 var notion = new notionClient(); 
-import { Talk } from './src/message-handler.js'
+//import { Talk } from './src/message-handler.js'
+import { witClient  , witCompare } from './src/wit-handler.js';
 
-var lineChange = `
-`
 
 
 discord.on("message", msg =>{
-
   if(!msg.author.bot){
-    var mm = msg.content;
-    //
-    var ask_greeting = ["hey","hi","hello"]
-    if( Talk( mm ,ask_greeting ) ){
-      msg.reply( "Hey, Beautiful❤️" )
-    }
+      talk( msg );}})
 
-    var ask_todo = ["todo", "to do"]
-    if( Talk( mm , ask_todo ) ){
+
+function talk(msg){
+  var mm = msg.content;
+  witClient.message(mm).then( ( {entities, intents, traits} ) => {//
+
+    var style = {entities, intents, traits} ;
+
+    if( witCompare( style, {intents : ["greeting"]} )){
+        channel.send( "Hey, Beautiful❤️" )
+    }
+    if( witCompare( style, {intents : ["schedule"]} ) ){
+      //return todo list
       var Do = async () =>{
         var pages = await notion.getPages( notion.databases["Worklog"] );
         var columns = await notion.getColumns( pages[0].id );
@@ -29,37 +32,43 @@ discord.on("message", msg =>{
         var text = "🌈 This is your today's tasks,  "+ msg.author.username +" 😊"; 
         text += await notion.blocks_to_text(blocks); 
 
-        msg.reply(text)
+        channel.send(text)
         }
         Do()
     }
 
-    var ask_new = ["create new"]
-    if( Talk(mm, ask_new) ){
-      var Do = async () =>{
-        await notion.createNewPage( notion.databases["Worklog"] ); 
-        msg.reply(`I just created new [${mmdd(monday)}] Log for you!❤️`)
-      }
-      Do();
-    }
 
-    var ask_clear = ['clear']
-    if( Talk(mm, ask_clear) ){
-        async function clearChannel(){
-          Promise.resolve( await channel.messages.fetch({limit: 100}) )
-            .then( fetched =>{
-              channel.bulkDelete(fetched);
-            })
+
+
+
+    
+    if( intents.name =="request" && entities.includes("create") && entities.includes("log") ){
+        var Do = async () =>{
+          await notion.createNewPage( notion.databases["Worklog"] ); 
+          channel.send(`I just created new [${mmdd(monday)}] Log for you!❤️`)
         }
-        clearChannel()
+        Do();
     }
+    
+
+  })
+
+
   //
-
+  if ( mm.toLowerCase() == "clear"){
+    async function clearChannel(){
+      Promise.resolve( await channel.messages.fetch({limit: 100}) )
+        .then( fetched =>{
+          channel.bulkDelete(fetched);
+        })
+    }
+    clearChannel()
+    
+   
   }
-
-
-
   
-})
 
+}
 
+var lineChange = `
+`
