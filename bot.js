@@ -16,12 +16,14 @@ function talk(msg){
   witClient.message(mm).then( ( {entities, intents, traits} ) => {//
 
     var style = {entities, intents, traits} ;
+    
 
+    
     if( witCompare( style, {intents : ["greeting"]} )){
         channel.send( "Hey, Beautiful❤️" )
     }
-    if( witCompare( style, {intents : ["schedule"]} ) ){
-      //return todo list
+    
+    if( witCompare( style, { entities :["task" ,"question"] } ) ){      
       var Do = async () =>{
         var pages = await notion.getPages( notion.databases["Worklog"] );
         var columns = await notion.getColumns( pages[0].id );
@@ -31,18 +33,12 @@ function talk(msg){
         var blocks = await notion.getChildren( TodaysColumn.id, {type:'to_do'} );
         var text = "🌈 This is your today's tasks,  "+ msg.author.username +" 😊"; 
         text += await notion.blocks_to_text(blocks); 
-
         channel.send(text)
-        }
-        Do()
+      }
+      Do()
     }
-
-
-
-
-
     
-    if( intents.name =="request" && entities.includes("create") && entities.includes("log") ){
+    if( witCompare( style, {intents : ["request"] , entities :["log" , "create"] } )   ){
         var Do = async () =>{
           await notion.createNewPage( notion.databases["Worklog"] ); 
           channel.send(`I just created new [${mmdd(monday)}] Log for you!❤️`)
@@ -50,7 +46,6 @@ function talk(msg){
         Do();
     }
     
-
   })
 
 
@@ -63,6 +58,7 @@ function talk(msg){
         })
     }
     clearChannel()
+    channel.send(`Awesome New Beginning❤️`)
     
    
   }
