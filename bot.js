@@ -10,7 +10,7 @@ import * as Action from './action/notion-task-manager.js'
 //import fs from 'fs'
 //const  talkDict = JSON.parse(fs.readFileSync('./script/conversation/chat-dictionary.json'));
 
-
+talk( "what is todays tasks?" );
 discord.on("message", msg =>{
   if(!msg.author.bot){
       var mm = msg.content.toLowerCase();

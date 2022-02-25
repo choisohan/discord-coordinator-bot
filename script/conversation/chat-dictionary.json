@@ -2,25 +2,12 @@
 
 
 [
+
   {
-      "entities" :[] , "intents" : ["greeting"] , "traits" :[] ,
-      "message" : [
-        "Hey, Beautiful❤️" 
-      ]   
-  },
-  {
-      "entities" :["task","question"] , "intents" : [] , "traits" :[] ,
+      "entities" :["task","question"] , "intents" : ["schedule"] , "traits" :[] ,
       "script" : ["Action.TellMeABoutTodaysTask()"]   
-  },
-  {
-      "entities" :["log" , "create"] , "intents" : ["request"] , "traits" :[] ,
-      "response" : ["Action.CreateNewLog()"]   
-  },
-  {
-      "entities" :[] , "intents" : [] , "traits" :{"mood":["bored"]} ,
-      "response" : ["Boring Day, right?😞"]   
   }
-  
+
 
 
 ]

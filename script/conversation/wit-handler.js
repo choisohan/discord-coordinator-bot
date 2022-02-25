@@ -24,7 +24,7 @@ var anyisIn = (arr1, arr2)=>{
     return bool; 
 }
 
-console.log(  "❤️❤️❤️ ",anyisIn([1,2],[1,2,3,4,5])  );
+//console.log(  "❤️❤️❤️ ",anyisIn([1,2],[1,2,3,4,5])  );
 /*
 var allisThis = (value, array ) =>{
     return array.includes(value)
@@ -34,6 +34,7 @@ console.log( "❤️❤️❤️" ,allisThis(true, [true,true]))
 
 export const findIntention = ( _entities, _intents, _traits  ) =>{
     console.log( "-------------------")
+
     console.log( "🌿 👩‍🌾 🏛️ ❤️ 🍕 🍎 ")
     var entities = Object.values(_entities).map( e =>e[0].name)
     var intents = _intents.map( e=> e.name)
@@ -114,11 +115,6 @@ export const findIntention = ( _entities, _intents, _traits  ) =>{
 }
 //{mood : ['bored','d'] }
 
-findIntention(
-    {}, [ { id: '1257024694791034', name: 'chat', confidence: 0.996 } ] , {
-        mood: [ { id: '1310233119486660', value: 'bored', confidence: 0.9881 } ]
-      }
-  )
 
 /*    {} , [ { id: '1257024694791034', name: 'chat', confidence: 0.996 } ] , 
 {mood: [ { id: '1310233119486660', value: 'bored', confidence: 0.9882 } ]}
