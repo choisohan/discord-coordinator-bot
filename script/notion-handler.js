@@ -4,13 +4,12 @@ import { monday,mmdd } from './scheduler.js';
 import { discord , channel } from './discord-handler.js'
 
 
-var notion; var BLOCKS = [] ;
-
-export class notionClient{
+var NOTION; var BLOCKS = [] ;
+class notionClient{
     constructor(){
-        notion =  new Client( {auth :  process.env.NOTION_TOKEN } );
+        NOTION =  new Client( {auth :  process.env.NOTION_TOKEN } );
         var getDatas = async () => {
-            this.home =  await notion.blocks.children.list({ block_id:process.env.NOTION_HOME_ID });
+            this.home =  await NOTION.blocks.children.list({ block_id:process.env.NOTION_HOME_ID });
            this.databases = {}; 
            this.home.results.forEach(item =>{
                if( typeof(item.child_database) =='object'  ){
@@ -18,19 +17,6 @@ export class notionClient{
                }
            })
            //
-                 /*
-           var pages = await this.getPages( this.databases["Worklog"] );
-           var columns = await this.getColumns( pages[0].id );
-           var today = new Date().getDay() -1 ;
-           console.log("Today : ",today)
-           var TodaysColumn = columns[today];
-           console.log( "TodaysColumn : ", TodaysColumn.id)
-           var blocks = await this.getChildren( TodaysColumn.id, {type:'to_do'} );
-
-           var text = await this.blocks_to_text(blocks); 
-
-           console.log(text)
-                */
            //
 
         }
@@ -38,10 +24,9 @@ export class notionClient{
     }
 
 
-
-
     async getPages( database_ID) {
-        var DB = await notion.databases.query({database_id : database_ID })
+
+        var DB = await NOTION.databases.query({database_id : database_ID })
         var items = DB.results
         .filter(log =>{
             if (log.properties.Name.title[0]){
@@ -86,6 +71,15 @@ export class notionClient{
                 }
             })
         })
+        if( style ){
+            if('type' in style){
+                arr = arr.filter(i =>
+                    style.type in i
+                )
+            }
+        }
+
+
         return arr;
     }
 
@@ -99,18 +93,81 @@ export class notionClient{
             var t = Type.text[0].plain_text
             text += t; 
         }
+        console.log(text)
         return text;
     }
     
     async blocks_to_text( _blocks ){
         var text = ""
         _blocks.forEach( b =>{
-            text += this.block_to_text(b) + lineChange;
+            text += this.block_to_text(b) + "" + lineChange;
        })
        return text;
     }
+
+    async createNew( DATABASE_ID , style ){
+        var info = await newPageInfo( DATABASE_ID , style );
+        await NOTION.pages.create( info ); 
+    }
+
+    async deleteItem( block_ID ){
+        await NOTION.blocks.delete({block_id: block_ID});
+    }
+
 }
 
+
+var newPageInfo = async ( DATABASE_ID, style )=>{
+    console.log( DATABASE_ID )
+    var DB = await NOTION.databases.query({database_id : DATABASE_ID })
+    var info = await DB.results[0];
+    info.parent = {database_id : DATABASE_ID    }
+
+    var _remove = ['object' ,'id', 'created_time' , 'last_edited_time' , 'created_by','last_edited_by', 'cover' ,'url']
+    _remove.forEach( key =>{
+        delete info[key]
+    })
+
+    var _Properties = info.properties;
+    if('Property' in _Properties ){
+        delete _Properties.Property
+    }
+    
+    Object.keys( _Properties).forEach( async key =>{
+        var type = await _Properties[key].type;
+        var type_value = _Properties[key][type];
+        delete _Properties[key].id;
+
+        //Empty all
+        if( Array.isArray(type_value)  ) {
+            var obj = _Properties[key][type][0];
+            if(obj){
+                obj[obj.type].content = style[key]
+                if("plain_text" in obj){ obj["plain_text"] = style[key] }
+                _Properties[key][type] = [obj] ;
+            }
+
+        }
+        else if( typeof(type_value)=="boolean" ){
+            _Properties[key][type] = false; 
+        }
+        else{
+            _Properties[key][type] = null; 
+        }
+
+    }) 
+
+    info.properties= _Properties;
+      
+    return info
+}
+
+
+
+
+
+
+/////////////////////////
 async function getAllItems( ID, style ){
     var arr = [];
     
@@ -174,7 +231,7 @@ var itemCheck = ( item, style )=>{
 }
 
 
-function duplicateLatest(database_ID){
+function duplicateLatest( database_ID ){
     Promise.resolve( getPages(  database_ID )).then( pages => { 
         var latest =  pages[0];
         Promise.resolve ( getChildren(latest.id) ).then(
@@ -271,9 +328,9 @@ function getItemWithType( typeName, array){
     sorted = array.filter(item =>item.type === typeName)
     return sorted; 
 }
-/*
+
 async function getPages(  database_ID ){
-    var DB = await notion.databases.query({database_id : database_ID })
+    var DB = await NOTION.databases.query({database_id : database_ID })
     var items = DB.results
     .filter(log =>{
         if (log.properties.Name.title[0]){
@@ -283,11 +340,11 @@ async function getPages(  database_ID ){
         }
     })
     return items
-}*/ 
+}
 
 async function getAllBlocks(pageID){
     BLOCKS = []
-    Promise.resolve( await notion.blocks.children.list({block_id: pageID})).then( resolve => {
+    Promise.resolve( await NOTION.blocks.children.list({block_id: pageID})).then( resolve => {
         BLOCKS = resolve.results;
         //console.log("level1",BLOCKS.length);
         
@@ -326,12 +383,12 @@ async function getAllBlocks(pageID){
 
 
 async function getChildren(id){
-    return await notion.blocks.children.list({block_id: id});
+    return await NOTION.blocks.children.list({block_id: id});
 }
 
 //style is dictionary
 async function createNewPage( DATABASE_ID, style ){
-    const response = await notion.pages.create({
+    const response = await NOTION.pages.create({
         parent: {
           database_id: DATABASE_ID,
         },
@@ -375,3 +432,5 @@ var emptyChildren  =
           },
         },
       ]
+      
+export var notion = new notionClient(); 

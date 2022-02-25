@@ -8,9 +8,12 @@ https://www.youtube.com/watch?v=qv24S2L1N0k&t=285s
 - [x] return today's tasks
 - [x] wit.ai
 - [ ] train more wit.ai
-- [ ] move to_do block between 'worklog' and 'tasks'
+- [ ] merge -> TellMeABoutTodaysTask() , TellMeAboutTodaysLeftTask()
+- [x] move to_do block between 'worklog' and 'tasks'
+- [ ] move today's task to tomorrow
 - [ ] weather notification
 - [ ] remind later
 - [ ] mongoDB store
 - [ ] recurring tasks
 - [ ] Server in heroku
+- [ ] Every sunday, collect all uncompletes task to the new week
