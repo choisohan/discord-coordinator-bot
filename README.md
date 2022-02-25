@@ -7,6 +7,7 @@ https://www.youtube.com/watch?v=qv24S2L1N0k&t=285s
 - [x] create new log
 - [x] return today's tasks
 - [x] wit.ai
+- [ ] better wit analyzer
 - [ ] train more wit.ai
 - [ ] merge -> TellMeABoutTodaysTask() , TellMeAboutTodaysLeftTask()
 - [x] move to_do block between 'worklog' and 'tasks'
