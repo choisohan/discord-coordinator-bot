@@ -2,12 +2,27 @@
 
 
 [
-
   {
-      "entities" :["task","question"] , "intents" : ["schedule"] , "traits" :[] ,
+      "entities" :[] , "intents" : ["greeting"] , "traits" :{} ,
+      "message" : [
+        "Hey, Beautiful❤️" 
+      ]   
+  },
+  {
+      "entities" :["task","question"] , "intents" : ["schedule"] , "traits" :{},
       "script" : ["Action.TellMeABoutTodaysTask()"]   
+  },
+  {
+      "entities" :["log" , "create"] , "intents" : ["request"] , "traits" :{} ,
+      "script" : ["Action.CreateNewLog()"]   
+  },
+  {
+      "entities" :[] , "intents" : ["chat"] , "traits" :{"mood":["bored"]} ,
+      "message" : ["Boring Day, right?😞"]
+  },
+  {
+    "entities" :[] , "intents" : ["respond"] , "traits" :{} ,
+    "message" : ["Awesome!"], "script" : ["store.script"]
   }
-
-
 
 ]

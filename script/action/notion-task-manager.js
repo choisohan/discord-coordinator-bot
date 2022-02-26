@@ -1,6 +1,9 @@
-import { notion } from "../script/notion-handler.js";
-import { channel } from "../script/discord-handler.js";
-import { monday,mmdd } from '../script/scheduler.js';
+import { notion } from "../notion-handler.js";
+import { channel } from "../discord-handler.js";
+import { monday,mmdd } from '../scheduler.js';
+import { reminder } from "../mongoDB/mongoDB.js";
+import { CronJob } from 'cron'
+import 'dotenv/config' // ES6
 
 
 export var TellMeABoutTodaysTask = async () =>{
@@ -47,6 +50,7 @@ export var MoveTodaysLeftTask = async()=>{
 
 
 export var CreateNewLog = async () =>{
+    console.log("❤️CreateNewLog()")
     await notion.createNewPage( notion.databases["Worklog"] ); 
     channel.send(`I just created new [${mmdd(monday)}] Log for you!❤️`)
 }
@@ -58,6 +62,26 @@ export async function clearChannel(){
         channel.send(`Awesome New Beginning❤️`)
       })
 }
+
+export async function reminderInit(){
+    for await (const doc of reminder.model.find() ){
+        if( "cronTime" in doc ){
+            new CronJob(doc.cronTime, ()=>{
+                if("message" in doc && doc.message.length > 0 ){
+                    channel.send(doc.message[ Math.floor( Math.random* doc.message.length )])
+                }
+                else{
+                    channel.send(doc.name +"🍍" )
+                }
+                
+    
+            }, null, null , process.env.TIMEZONE).start();
+        }
+
+    }
+}
+
+
 
 export function test(){
     console.log('test')
