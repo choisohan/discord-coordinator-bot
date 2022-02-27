@@ -13,3 +13,12 @@ discord.on('ready',()=>{
 })
 
 discord.login(process.env.BOT_TOKEN);
+
+
+
+export const newEmbed = (_embeded) =>{
+    return new Discord.MessageEmbed().setTitle(_embeded.title)
+                                    .addFields(_embeded.field)
+
+
+}

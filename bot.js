@@ -4,6 +4,7 @@ import * as Action from './script/action/notion-task-manager.js'
 
 
 
+
 discord.on("message", msg =>{
   if(!msg.author.bot){
       var mm = msg.content.toLowerCase();
@@ -25,9 +26,9 @@ function talk(msg){
   witClient.message(mm).then( ( {entities, intents, traits} ) => {// 
     Promise.resolve(findIntention(entities, intents, traits)).then( findDB =>{
       
-      console.log("🍎🍎🍎🍎🍎🍎🍎🍎🍎")
+      //console.log("🍎🍎🍎🍎🍎🍎🍎🍎🍎")
      // console.log(entities,",", intents,",",traits )
-      console.log("🍎🍎🍎🍎🍎🍎🍎🍎🍎")
+      //console.log("🍎🍎🍎🍎🍎🍎🍎🍎🍎")
       
 
       
@@ -37,14 +38,20 @@ function talk(msg){
           channel.send(rand_message) ;// send random message from the list
         }
 
-        if('script' in findDB){
-          if( !findDB.entities.includes('yes') && !findDB.entities.includes('no')){
-            bot.script=  findDB.script[0]; 
-            bot.entities=  entities;
-            bot.intents=  intents;
-            bot.traits=  traits;
-            var alertMsg = 'alert' in findDB ? findDB.alert : "Do you want to run " + bot.script +"?"
-            channel.send(alertMsg)
+        if('script' in findDB ){
+          if( !findDB.entities.includes('yes') && !findDB.entities.includes('no') ){
+            if("alert" in findDB){
+              bot.script=  findDB.script[0]; 
+              bot.entities=  entities;
+              bot.intents=  intents;
+              bot.traits=  traits;
+              var alertMsg = 'alert' in findDB ? findDB.alert : "Do you want to run " + bot.script +"?"
+              channel.send(alertMsg)
+            }
+            else{
+              eval(findDB.script[0])
+            }
+
           }
           else{
             if( findDB.entities.includes("yes") ){
@@ -52,7 +59,7 @@ function talk(msg){
                 eval(bot.script);
               }
               else{
-                channel.send("I don't understand what to do..")
+                channel.send("I don't understand what to do.." )
               }
               
             }

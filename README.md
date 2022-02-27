@@ -29,6 +29,7 @@
 - [x] wit.ai set up 
 - [x] wit analyzer v0.01
 - [x] ask before excute
+- [ ] TellMeABoutTodaysTas() => column count get error when notion block is not exactly matching
 - [ ] merge -> TellMeABoutTodaysTask() , TellMeAboutTodaysLeftTask()
 - [ ] move today's task to tomorrow
 - [x] move to_do block between 'worklog' and 'tasks'

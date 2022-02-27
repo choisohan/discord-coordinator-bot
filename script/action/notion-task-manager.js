@@ -1,5 +1,5 @@
 import { notion } from "../notion-handler.js";
-import { channel } from "../discord-handler.js";
+import { channel,newEmbed } from "../discord-handler.js";
 import { monday,mmdd } from '../scheduler.js';
 import { reminder } from "../mongoDB/mongoDB.js";
 import { CronJob } from 'cron'
@@ -11,12 +11,17 @@ import { allisIn } from "../utils/compare.js";
 export var TellMeABoutTodaysTask = async () =>{
     var pages = await notion.getPages( notion.databases["Worklog"] );
     var columns = await notion.getColumns( pages[0].id );
-    var today = new Date().getDay() -1 ; 
-    var TodaysColumn = columns[today];
+    console.log( "columns.length : ", columns.length)
+    var today = new Date().getDay() ; 
+    today = today == 0 ? 6: today - 1; 
+    console.log( "today : ", today)
+    var TodaysColumn = columns[today]; 
+    console.log( "TodaysColumn : ", TodaysColumn)
     var blocks = await notion.getChildren( TodaysColumn.id, {type:'to_do'} );
-    var text = "🌈 This is your today's tasks, Min😊"; 
-    text += await notion.blocks_to_text(blocks); 
-    channel.send(text)
+    var text = await notion.blocks_to_text(blocks); 
+
+    var _newEmbed = newEmbed( {title: "🌈 " + new Date().toDateString() ,field :{name : "Things to do"  ,value : text } } )
+    channel.send({embeds : [_newEmbed] })
 }
 
 export var TellMeAboutTodaysLeftTask = async()=>{
@@ -69,13 +74,16 @@ export async function clearChannel(){
 export async function reminderInit(){
 
     for await (const doc of reminder.model.find() ){
-        if( "cronTime" in doc ){            
+        if( "cronTime" in doc ){
+            console.log(doc.cronTime )            
             var job =new CronJob(doc.cronTime, ()=>{setAlarm(doc);                    
                 }, null, null , process.env.TIMEZONE)
             job.start()
         }
     }
 }
+
+//new CronJob("1/", ()=>{console.log("🐣")}).start;                    
 
 
 
@@ -178,12 +186,12 @@ export function createReminder( _entities){
 
 var setAlarm = (reminderDoc) =>{
     if(reminderDoc.isRecurring){
-        channel.send("⏰ Time for " + _agenda  +"!" );
+        channel.send("⏰ Time for " + reminderDoc.name  +"!" );
     }
     else{
         //Destroy
+        channel.send("⏰⏰⏰⏰ it's time for " + reminderDoc.name  +"!" );
         reminder.deleteOne({_id: reminderDoc._id});
-        channel.send("⏰⏰⏰⏰ it's time for " + _agenda  +"!" );
     }
 }
 
