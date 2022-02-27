@@ -45,3 +45,4 @@ export const memory = new mongoDB('memory',
   })*/ 
 
 //reminder.add({name: "Catch-Up", cronTime:  "0 15 * * 1-5" , message : ["How are you doing?", "Everything good?"]})
+//reminder.add({name : "test", cronTime : "3 * * * *", message:["test!!🐵 🧞‍♀️🐊 🐋"] })

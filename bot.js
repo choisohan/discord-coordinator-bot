@@ -2,6 +2,8 @@ import { discord , channel} from './script/discord-handler.js'
 import { witClient , findIntention } from './script/conversation/wit-handler.js';
 import * as Action from './script/action/notion-task-manager.js'
 
+
+
 discord.on("message", msg =>{
   if(!msg.author.bot){
       var mm = msg.content.toLowerCase();
@@ -17,43 +19,55 @@ discord.on("message", msg =>{
     }
 })
 
-var store = {script : null, isTalking : false}; //this will reset whenever the script reinitiates
+var bot = {}; //this will reset whenever the script reinitiates
 function talk(msg){
   var mm = msg.content;
-  witClient.message(mm).then( ( {entities, intents, traits} ) => {//
-    
-    console.log( "🍎🍎🍎🍎🍎🍎🍎")
-    console.log( entities,"," , intents, ","  ,traits )
-    console.log( "🍎🍎🍎🍎🍎🍎🍎")
-    
-    
+  witClient.message(mm).then( ( {entities, intents, traits} ) => {// 
     Promise.resolve(findIntention(entities, intents, traits)).then( findDB =>{
-      console.log( "🍎",findDB)
-      if (findDB){
+      
+      console.log("🍎🍎🍎🍎🍎🍎🍎🍎🍎")
+      console.log(entities,",", intents,",",traits )
+      console.log("🍎🍎🍎🍎🍎🍎🍎🍎🍎")
+      
+
+      
+      if(findDB){
         if('message' in findDB ){
           var rand_message = findDB.message[ Math.floor(findDB.message.length * Math.random()) ]
           channel.send(rand_message) ;// send random message from the list
         }
-        
+
         if('script' in findDB){
-          if( ! "isTalking" in  store ||!store.isTalking){
-            //ask before Run
-            channel.send('Do you want me to run' + findDB.script[0]  +' ?'); 
-            store = {isTalking : true , script : findDB.script[0]} ; 
+          if( !findDB.entities.includes('yes') && !findDB.entities.includes('no')){
+            bot.script=  findDB.script[0]; 
+            channel.send("Do you want to run " + bot.script +"?")
           }
           else{
-            eval(store.script) ;// finally run
-            store = {}; 
+            if( findDB.entities.includes("yes") ){
+              if(bot.script){
+                eval(bot.script);
+              }
+              else{
+                channel.send("I don't understand what to do..")
+              }
+              
+            }
+            else{
+              delete bot.script; 
+            }
           }
         }
       }
-      else{ //failed to find
+      else{
         channel.send("What do you mean?")
       }
       
+       
 
       
+      
     })
+    
     
 
 

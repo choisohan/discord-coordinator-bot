@@ -63,29 +63,32 @@ export async function clearChannel(){
       })
 }
 
+
+
 export async function reminderInit(){
     for await (const doc of reminder.model.find() ){
+        
         if( "cronTime" in doc ){
-            new CronJob(doc.cronTime, ()=>{
+            var job = new CronJob(doc.cronTime, ()=>{
                 if("message" in doc && doc.message.length > 0 ){
-                    channel.send(doc.message[ Math.floor( Math.random* doc.message.length )])
+                    //channel.send(doc.message[ Math.floor( Math.random* doc.message.length )])               
                 }
                 else{
                     channel.send(doc.name +"🍍" )
                 }
                 
     
-            }, null, null , process.env.TIMEZONE).start();
+            }, null, null , process.env.TIMEZONE); 
+            job.start();
         }
 
     }
 }
+console.log("d") 
+function setSchedule(cronTime, eventFunction ){new CronJob(cronTime, eventFunction, null, null , process.env.TIMEZONE).start();} 
+setSchedule('1 * * * *',()=>{channel.send("🍍🍍🍍🍍")} ); 
 
 
-
-export function test(){
-    console.log('test')
-}
 
 var lineChange = `
 `

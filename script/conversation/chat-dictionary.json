@@ -5,24 +5,28 @@
   {
       "entities" :[] , "intents" : ["greeting"] , "traits" :{} ,
       "message" : [
-        "Hey, Beautiful❤️" 
+        "Hey Beautiful❤️" ,"Hey Gorgeous❤️", "How are you doing?" ,"Hey" ,"Hi!"
       ]   
   },
   {
-      "entities" :["task","question"] , "intents" : ["schedule"] , "traits" :{},
-      "script" : ["Action.TellMeABoutTodaysTask()"]   
+      "entities" :["what","tasks"], "intents" : ["request"] , "traits" :{},
+      "script" : ["Action.TellMeABoutTodaysTask()"] 
   },
   {
-      "entities" :["log" , "create"] , "intents" : ["request"] , "traits" :{} ,
+      "entities" :["create" ,"log"] , "intents" : ["request"] , "traits" :{} ,
       "script" : ["Action.CreateNewLog()"]   
   },
   {
-      "entities" :[] , "intents" : ["chat"] , "traits" :{"mood":["bored"]} ,
-      "message" : ["Boring Day, right?😞"]
+      "entities" :[] , "intents" : ["chat"] , "traits" :{"sentiment":["negative"]} ,
+      "message" : ["Are you okay?"]
   },
   {
-    "entities" :[] , "intents" : ["respond"] , "traits" :{} ,
-    "message" : ["Awesome!"], "script" : ["store.script"]
+    "entities" :["yes"], "intents" : ["respond"] , "traits" :{} ,
+    "script" : ["store.script"]
+  },
+  {
+    "entities" :["no"], "intents" : ["respond"] , "traits" :{} ,
+    "message" : ["No problem" ,"No worries"]
   }
 
 ]
