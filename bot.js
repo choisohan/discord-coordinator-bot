@@ -26,7 +26,7 @@ function talk(msg){
     Promise.resolve(findIntention(entities, intents, traits)).then( findDB =>{
       
       console.log("🍎🍎🍎🍎🍎🍎🍎🍎🍎")
-      console.log(entities,",", intents,",",traits )
+     // console.log(entities,",", intents,",",traits )
       console.log("🍎🍎🍎🍎🍎🍎🍎🍎🍎")
       
 
@@ -40,6 +40,9 @@ function talk(msg){
         if('script' in findDB){
           if( !findDB.entities.includes('yes') && !findDB.entities.includes('no')){
             bot.script=  findDB.script[0]; 
+            bot.entities=  entities;
+            bot.intents=  intents;
+            bot.traits=  traits;
             channel.send("Do you want to run " + bot.script +"?")
           }
           else{

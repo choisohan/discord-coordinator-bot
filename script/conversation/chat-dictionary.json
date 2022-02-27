@@ -27,6 +27,10 @@
   {
     "entities" :["no"], "intents" : ["respond"] , "traits" :{} ,
     "message" : ["No problem" ,"No worries"]
+  },
+  {
+    "entities" :["remind","datetime"], "intents" : ["request"] , "traits" :{} ,
+    "script" : ["Action.createReminder(bot.entities )"]
   }
-
+ 
 ]

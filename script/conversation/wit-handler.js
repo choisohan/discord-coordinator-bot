@@ -1,7 +1,6 @@
 import 'dotenv/config' 
 import  Wit  from 'node-wit'
 import fs from 'fs'
-import { PassThrough } from 'stream';
 const  talkDB = JSON.parse(fs.readFileSync('./script/conversation/chat-dictionary.json'));
 
 
@@ -57,6 +56,9 @@ export const findIntention = async ( _entities, _intents, _traits  ) =>{
     Object.keys(_traits).forEach( k => {
         traits[k]= _traits[k].map(a =>a.value);
     })
+
+    console.log( "🐊🐊🐊" , entities)
+
     
     do {
         var db = talkDB[i];
@@ -145,4 +147,4 @@ function test(){
 
 
 
-//test()
+

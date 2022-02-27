@@ -37,6 +37,8 @@
 
 ## Reminder / Scheduler
 - [x] mongoDB store
+- [x] convertWitTimeToCron()
+- [ ] one time event -> clean up every in a while?
 - [ ] recurring tasks
 - [ ] remind later
 - [ ] Every sunday, collect all uncompletes task to the new week
