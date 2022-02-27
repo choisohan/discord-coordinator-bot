@@ -4,6 +4,9 @@ import { monday,mmdd } from '../scheduler.js';
 import { reminder } from "../mongoDB/mongoDB.js";
 import { CronJob } from 'cron'
 import 'dotenv/config' // ES6
+import { entitiesFilter } from "../conversation/wit-handler.js";
+import { allisIn } from "../utils/compare.js";
+
 
 export var TellMeABoutTodaysTask = async () =>{
     var pages = await notion.getPages( notion.databases["Worklog"] );
@@ -63,25 +66,17 @@ export async function clearChannel(){
 }
 
 
-
 export async function reminderInit(){
+
     for await (const doc of reminder.model.find() ){
-        
-        if( "cronTime" in doc ){
-            var job = new CronJob(doc.cronTime, ()=>{
-                
-                if("message" in doc && doc.message.length > 0 ){
-                    channel.send(doc.message[ Math.floor( Math.random* doc.message.length )])               
-                }
-                else{
-                    channel.send("it's time for " + doc.name  +"!" )
-                }
-                
-            }, null, null , process.env.TIMEZONE); 
-            job.start();
+        if( "cronTime" in doc ){            
+            var job =new CronJob(doc.cronTime, ()=>{setAlarm(doc);                    
+                }, null, null , process.env.TIMEZONE)
+            job.start()
         }
     }
 }
+
 
 
 
@@ -89,17 +84,44 @@ var getCalendar = (wit_datetime ) =>{
     return [wit_datetime].map( t => {
         var _t = t.split("T");
         return {
-            y : _t[0].split("-")[0],
-            m : _t[0].split("-")[1],
-            d : _t[0].split("-")[2],
+            min:  _t[1].split(":")[1],
             hour:  _t[1].split(":")[0],
-            min:  _t[1].split(":")[1]
+            day : _t[0].split("-")[2],
+            month : _t[0].split("-")[1],
+            year : _t[0].split("-")[0],
         }
     })[0];
 }
-var getCronTime = ( calendar )=> {
-    var T = calendar ; var out = "";
-    [T.min, T.hour, T.d , T.m, "*" ].forEach(
+var getCronTime = ( _cal )=> {
+    var out = ""; var CAL ={ min: "*", hour:"*", day: "*", month: "*"}; 
+    if( allisIn(["year","month","day","hour","min"],Object.keys(_cal))){
+        //this is calendar
+        CAL = _cal; 
+    }
+    else{
+        var today= new Date(); 
+        if("minute" in _cal){
+            CAL.min = "*/"+_cal.minute.toString();
+        } 
+        else if ("hour" in _cal){
+            CAL.min = today.getMinutes();
+            CAL.hour = "*/" + _cal.hour.toString();
+        }
+        else if ("month" in _cal){
+            CAL.min = today.getMinutes();
+            CAL.hour = today.getHours();
+            CAL.day = today.getDay();
+            CAL.month = "*/"+ _cal.month.toString(); 
+        }
+        else if ("year" in _cal){
+            CAL.min = today.getMinutes();
+            CAL.hour = today.getHours();
+            CAL.day = today.getDay();
+            CAL.month =  today.getMonth(); 
+        }
+    }
+
+    [CAL.min, CAL.hour, CAL.day , CAL.month, "*" ].forEach(
         t=> {out += t +" "}
     ) 
     return out.substring(0, out.length-1); 
@@ -108,34 +130,61 @@ var getCronTime = ( calendar )=> {
 var months = [ "January", "February", "March", "April", "May", "June", 
            "July", "August", "September", "October", "November", "December" ];
 
+        
+
+
 export function createReminder( _entities){
-    var _time = _entities['wit$datetime:datetime'][0].value;
-    var _agenda = "";
-    if('wit$agenda_entry' in _entities){
-        _agenda = _entities['wit$agenda_entry:agenda_entry'][0].value;
+    var entitie = entitiesFilter(_entities); 
+    console.log( entitie)
+    
+    
+    
+    var _agenda = entitie.agenda_entry ? entitie.agenda_entry : "something" ;
+    var _isRecurring = entitie.every ? true : false
+
+    var _calendar = "datetime" in entitie ? getCalendar(entitie.datetime) : null;
+    var _duration = "duration" in entitie ? entitie.duration : null ; 
+
+    var _cronTime = _calendar ?  getCronTime(_calendar) : _duration ? getCronTime(_duration) : null;
+    if(_cronTime){
+        // 1. add to doc
+        Promise.resolve(reminder.add({
+            name : _agenda,
+            cronTime : _cronTime, 
+            message:[_agenda],
+            script: null,
+            isRecurring: _isRecurring
+        })).then(doc=>{
+
+            // 2. if it's same day, add cron
+            var Days =  parseInt(new Date('2022,2,25') - new Date() ) / (1000 * 60 * 60 * 24) ;
+            if (Days > 0 ){
+                var job = new CronJob(_cronTime, ()=>{ 
+                    setAlarm(doc); 
+                }, null, null , process.env.TIMEZONE); 
+                job.start();
+            } 
+            channel.send("I just created the ✨⏰new reminder for you");
+        
+        })
+    }
+    else{
+        console.log( "🌀ERROR : ", _calendar, _duration)
     }
     
-    var _calendar = getCalendar(_time)
-    var _cronTime = getCronTime(_calendar) ;
 
-    // 1. 
-    reminder.add({
-        name : _agenda,
-        cronTime : _cronTime, 
-        message:[_agenda]
-    })
 
-    // 2. if it's same day, add cron
-    var Days =  parseInt(new Date('2022,2,25') - new Date() ) / (1000 * 60 * 60 * 24) ;
-    if (Days > 0 ){
-        var job = new CronJob(_cronTime, ()=>{ 
-            channel.send("it's time for " + _agenda  +"!" )
-        }, null, null , process.env.TIMEZONE); 
-        job.start();
-    } 
-    channel.send("I just created the new reminder for you at "
-                    + months[ 1+_calendar.m ] + "." + _calendar.d
-                    +" - " + _calendar.hour +" : " + _calendar.min );
+}
+
+var setAlarm = (reminderDoc) =>{
+    if(reminderDoc.isRecurring){
+        channel.send("⏰ Time for " + _agenda  +"!" );
+    }
+    else{
+        //Destroy
+        reminder.deleteOne({_id: reminderDoc._id});
+        channel.send("⏰⏰⏰⏰ it's time for " + _agenda  +"!" );
+    }
 }
 
 

@@ -18,8 +18,9 @@ class mongoDB {
     this.model = new mongoose.model(_name, this.schema);
   }
   
-  add(_properties){
-    new this.model(_properties ).save()
+  async add(_properties){
+    var NEW = await new this.model(_properties ).save();
+    return NEW; 
   }
   edit(filter, update){ //{ name : }, {name : }
     this.model.updateOne(filter ,
@@ -35,7 +36,8 @@ export const reminder = new mongoDB('reminder' ,
   { name : String,
     cronTime: String,
     script : String, 
-    message : [String]
+    message : [String],
+    isRecurring : Boolean
   }); 
 
 /*
@@ -44,5 +46,4 @@ export const memory = new mongoDB('memory',
     script : String
   })*/ 
 
-//reminder.add({name: "Catch-Up", cronTime:  "0 15 * * 1-5" , message : ["How are you doing?", "Everything good?"]})
 //reminder.add({name : "test", cronTime : "3 * * * *", message:["test!!🐵 🧞‍♀️🐊 🐋"] })

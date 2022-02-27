@@ -14,7 +14,7 @@
   },
   {
       "entities" :["create" ,"log"] , "intents" : ["request"] , "traits" :{} ,
-      "script" : ["Action.CreateNewLog()"]   
+      "script" : ["Action.CreateNewLog()"] , "alert" : "Do you want me to create new log?"  
   },
   {
       "entities" :[] , "intents" : ["chat"] , "traits" :{"sentiment":["negative"]} ,
@@ -22,7 +22,7 @@
   },
   {
     "entities" :["yes"], "intents" : ["respond"] , "traits" :{} ,
-    "script" : ["store.script"]
+    "script" : ["store.script"] 
   },
   {
     "entities" :["no"], "intents" : ["respond"] , "traits" :{} ,
@@ -30,7 +30,13 @@
   },
   {
     "entities" :["remind","datetime"], "intents" : ["request"] , "traits" :{} ,
-    "script" : ["Action.createReminder(bot.entities )"]
+    "script" : ["Action.createReminder(bot.entities )"] , "alert" :"Do you want me to remind you that time?"
+  },
+  {
+    "entities" :["remind","duration"], "intents" : ["request"] , "traits" :{} ,
+    "script" : ["Action.createReminder(bot.entities )"] , "alert" :"Do you want me to remind you that time?"
   }
+ 
+
  
 ]

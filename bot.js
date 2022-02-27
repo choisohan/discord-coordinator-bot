@@ -43,7 +43,8 @@ function talk(msg){
             bot.entities=  entities;
             bot.intents=  intents;
             bot.traits=  traits;
-            channel.send("Do you want to run " + bot.script +"?")
+            var alertMsg = 'alert' in findDB ? findDB.alert : "Do you want to run " + bot.script +"?"
+            channel.send(alertMsg)
           }
           else{
             if( findDB.entities.includes("yes") ){

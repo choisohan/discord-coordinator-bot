@@ -38,12 +38,14 @@
 ## Reminder / Scheduler
 - [x] mongoDB store
 - [x] convertWitTimeToCron()
+- [x] wit_duration to cronTime -> - [ ] getCronTime() check out again
 - [ ] one time event -> clean up every in a while?
 - [ ] recurring tasks
 - [ ] remind later
 - [ ] Every sunday, collect all uncompletes task to the new week
 
-
+## communication
+- [ ] alert with embeded message
 
 ## unsorted
 - [ ] weather notification
