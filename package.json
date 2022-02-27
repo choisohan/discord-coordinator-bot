@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@discordjs/rest": "^0.3.0",
     "@notionhq/client": "^0.4.13",
     "cron": "^1.8.2",
     "discord.js": "^13.6.0",
