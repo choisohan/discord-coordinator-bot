@@ -2,23 +2,24 @@ import { discord , channel} from './script/discord-handler.js'
 import { witClient , findIntention } from './script/conversation/wit-handler.js';
 import * as Action from './script/action/notion-task-manager.js'
 
-
-
-
-discord.on("message", msg =>{
-  if(!msg.author.bot){
-      var mm = msg.content.toLowerCase();
-      if ( mm == "clear"){
-        Action.clearChannel();
-      }
-      else{
-        talk( msg );
-      }
-
-
-      
-    }
+// Slash Command
+discord.on("interactionCreate", async interaction=>{
+  if(interaction.isCommand()){
+    await interaction.reply("🍎")
+  }
 })
+
+discord.on("messageCreate", async msg=>{
+  if(!msg.author.bot){
+    var mm = msg.content.toLowerCase();
+    if ( mm == "clear"){
+      Action.clearChannel();
+    }
+    else{
+      talk( msg );
+    }
+  }})
+
 
 var bot = {}; //this will reset whenever the script reinitiates
 function talk(msg){
@@ -34,7 +35,7 @@ function talk(msg){
       
       if(findDB){
         if('message' in findDB ){
-          var rand_message = findDB.message[ Math.floor(findDB.message.length * Math.random()) ]
+          var rand_message = findDB.message[ Math.floor(findDB.message.length * Math.random()) ] ;
           channel.send(rand_message) ;// send random message from the list
         }
 
