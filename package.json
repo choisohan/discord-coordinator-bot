@@ -20,6 +20,7 @@
     "dotenv": "^16.0.0",
     "mongoose": "^6.2.3",
     "node-wit": "^6.0.1",
-    "nodemon": "^2.0.15"
+    "nodemon": "^2.0.15",
+    "twitter-api-v2": "^1.11.0"
   }
 }
