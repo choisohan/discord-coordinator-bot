@@ -1,11 +1,11 @@
-import { notion } from "../notion-handler.js";
-import { channel,newEmbed } from "../discord-handler.js";
-import { monday,mmdd } from '../scheduler.js';
-import { reminder } from "../mongoDB/mongoDB.js";
+import { notion } from "../handlers/notion-handler.js";
+import { channel,newEmbed } from "../handlers/discord-handler.js";
+import { monday,mmdd } from '../extra/scheduler.js';
+import { reminder } from "../handlers/mongo-handler.js";
 import { CronJob } from 'cron'
 import 'dotenv/config' // ES6
-import { entitiesFilter } from "../conversation/wit-handler.js";
-import { allisIn } from "../utils/compare.js";
+import { entitiesFilter } from "../handlers/wit-handler.js";
+import { allisIn } from "../extra/compare.js";
 
 
 export var TellMeABoutTodaysTask = async () =>{

@@ -1,6 +1,6 @@
 import 'dotenv/config' 
 import { Client } from '@notionhq/client'
-import { monday,mmdd } from './scheduler.js';
+import { monday,mmdd } from '../extra/scheduler.js';
 import { discord , channel } from './discord-handler.js'
 
 

@@ -1,8 +1,8 @@
 import 'dotenv/config' 
 import  Wit  from 'node-wit'
 import fs from 'fs'
-import { allisIn, anyisIn } from '../utils/compare.js';
-const  talkDB = JSON.parse(fs.readFileSync('./script/conversation/chat-dictionary.json'));
+import { allisIn, anyisIn } from '../extra/compare.js';
+const  talkDB = JSON.parse(fs.readFileSync('./script/extra/chat-dictionary.json'));
 
 
 export const witClient = new Wit.Wit({

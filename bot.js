@@ -1,7 +1,7 @@
-import { discord , channel} from './script/discord-handler.js'
-import { witClient , findIntention } from './script/conversation/wit-handler.js';
+import { discord , channel} from './script/handlers/discord-handler.js'
+import { witClient , findIntention } from './script/handlers/wit-handler.js';
 import * as Action from './script/action/notion-task-manager.js'
-import {tweet} from './script/sns/twitter-handler.js'
+import {tweet} from './script/handlers/twitter-handler.js'
 
 
 

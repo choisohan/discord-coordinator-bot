@@ -1,6 +1,6 @@
 import Discord, { Client, Intents, Collection } from "discord.js";
 import 'dotenv/config' 
-import { reminderInit } from "./action/notion-task-manager.js";
+import { reminderInit } from "../action/notion-task-manager.js";
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { REST } from "@discordjs/rest";
 import { Routes } from 'discord-api-types/v9'
