@@ -50,6 +50,7 @@ export const findIntention = async ( _entities, _intents, _traits  ) =>{
     var entities = entitiesFilter(_entities); 
     var intents = intentFilter(_intents); 
     var traits = traitFilter(_traits); 
+    console.log( "🐊",entities,intents,traits )
 
     do {
         var db = talkDB[i];

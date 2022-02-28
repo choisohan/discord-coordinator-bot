@@ -2,6 +2,8 @@ import 'dotenv/config'
 import { Client } from '@notionhq/client'
 import { monday,mmdd } from '../extra/scheduler.js';
 import { discord , channel } from './discord-handler.js'
+import { CronJob } from 'cron';
+import { ApplicationCommandPermissionType } from 'discord-api-types/v9';
 
 
 var NOTION; var BLOCKS = [] ;
@@ -42,11 +44,11 @@ class notionClient{
         //console.log( "getColumns(" + page_ID +")")
         var Weeks = []; 
 
-        var column_list = await getChildren( page_ID );
+        var column_list = await this.getChildren( page_ID );
         column_list = column_list.results.filter( item =>  item.type=='column_list' );
         
         for(var x = 0; x < column_list.length ; x++ ){
-            var column = await getChildren(column_list[x].id)
+            var column = await this.getChildren(column_list[x].id)
             column = column.results.filter( item =>  item.type=='column'  );
             
             for ( var y = 0; y < column.length ; y++ ){
@@ -58,29 +60,90 @@ class notionClient{
         }
     }
 
-    async createNewPage( database_ID ){
-        duplicateLatest(database_ID); 
+    async createNewPage( database_ID ){ 
+        var pages = await this.getPages(database_ID)
+        var latest = pages[0]
+        var latest = await this.getAllHierarchy( latest ) ; 
+        
+        //console.log("💫" , latest.children[0].column_list )
+
+        // * / * / * / * / * //
+
+        //console.log( children[0])
+        // * / * / * / * / * //
+
+        
+        const style = { title : mmdd(monday) , emoji : latest.icon.emoji ,  children: latest.children };
+        if( "Date" in latest.properties ){
+            var date = {start : latest.properties.Date.date.start}
+            if( "end" in latest.properties.Date.date){
+                date.end = latest.properties.Date.date.end
+            }
+            style.date =  date;
+        }
+        await createNewPage(database_ID, style); 
+
+        
+        
     }
 
-    async getChildren( block_id , style ){
-        var arr = [];
-        await getChildren( block_id ).then( children => {
-            children.results.forEach( child1 =>{
-                if( itemCheck( child1 , style )){
-                    arr.push ( child1 )  ; 
-                }
-            })
-        })
-        if( style ){
-            if('type' in style){
-                arr = arr.filter(i =>
-                    style.type in i
-                )
+    async getChildren( _block ){
+        if(_block.has_children || _block.object == "page"){
+            var children =  await NOTION.blocks.children.list({ block_id: _block.id });
+            return children.results
+        }else{
+            return [] }
+    }
+
+    async getAllHierarchy( _block ){
+
+        if( _block.has_children || _block.object == "page" ){
+            var arr =  await NOTION.blocks.children.list({ block_id: _block.id });
+            arr = arr.results; 
+
+            
+            for( var x = 0; x < arr.length ; x++ ){
+                if(arr[x].has_children){
+                    console.log( "❤ "+arr[x].type )
+                    var arr1 = await NOTION.blocks.children.list({ block_id: arr[x].id });
+                    arr1 = arr1.results; 
+                    arr[x][arr[x].type].children  = arr1;
+
+                    for( var y = 0; y < arr1.length ; y++ ){
+                        if(arr1[y].has_children){
+                            console.log( "🧡 "+arr1[y].type )
+                            var arr2 = await NOTION.blocks.children.list({ block_id: arr1[y].id });
+                            arr2 = arr2.results;
+                            arr1[y][arr1[y].type].children  = arr2;
+
+                            for( var z = 0; z < arr2.length ; z++ ){
+                                if(arr2[z].has_children){
+                                    console.log("💛 " +arr2[z].type )
+                                    var arr3 = await NOTION.blocks.children.list({ block_id: arr2[z].id });
+                                    arr3 = arr3.results; 
+                                    arr2[z][arr2[z].type].children  = arr3;
+
+                                    for( var w = 0; w < arr3.length ; w++ ){
+                                        if(arr3[w].has_children){
+                                            console.log("💙 "+arr3[w].type )
+                                            var arr4 = await NOTION.blocks.children.list({ block_id: arr3[w].id });
+                                            arr4 = arr4.results; 
+                                            arr3[w][arr3[z].type].children  = arr4;
+                                        }
+                                    } 
+
+                                }
+                            } 
+                        }
+                    } 
+                } 
             }
+
+            // Assign
+            if( !_block.type ) { _block.type = "children" }
+            _block[_block.type] = arr; 
+            return _block; 
         }
-
-
-        return arr;
     }
 
     block_to_text( _block ){
@@ -175,9 +238,6 @@ async function getAllItems( ID, style ){
         .then( resolve =>{
             console.love(resolve)
         })
-
-        
-
 }
 /*
 async function getLatestTasks( database_ID ){
@@ -230,61 +290,6 @@ var itemCheck = ( item, style )=>{
     return check 
 }
 
-
-function duplicateLatest( database_ID ){
-    Promise.resolve( getPages(  database_ID )).then( pages => { 
-        var latest =  pages[0];
-        Promise.resolve ( getChildren(latest.id) ).then(
-            children =>{
-                var arr = children.results;
-                arr.forEach(child1 =>{
-                    if(child1.type === 'column_list') {
-                        Promise.resolve(getChildren(child1.id)).then(children1 => {
-                            child1.column_list.children = children1.results
-                            children1.results.forEach(child2 =>{
-                                if(child2.type === 'column') { 
-                                    Promise.resolve(getChildren(child2.id)).then(children2 => {
-                                        
-                                        child2.column.children = children2.results.filter(
-                                            block =>{
-                                                if(block.type === 'paragraph'){
-                                                    return true;
-                                                }
-                                                else{
-                                                    if(block.type ==='to_do'){
-                                                        if(!block.to_do.checked){
-                                                            return true
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        )
-                                    })
-                                    
-                                }
-                            })
-                        }
-                        )
-                    }
-                })
-                
-                setTimeout(()=>{
-                    const style = { title : mmdd(monday) , emoji : latest.icon.emoji ,  children: children.results};
-                    if( "Date" in latest.properties ){
-                        var date = {start : latest.properties.Date.date.start}
-                        if( "end" in latest.properties.Date.date){
-                            date.end = latest.properties.Date.date.end
-                        }
-                        style.date =  date;
-                    }
-                    createNewPage( database_ID ,  style );
-                },3000)
-                
-            } 
-        )
-    })
-
-}
 
 async function getLatestTasks(database_ID){
     Promise.resolve( getPages(database_ID ) )
@@ -381,13 +386,16 @@ async function getAllBlocks(pageID){
 }
 
 
-
-async function getChildren(id){
+/*
+async function getChildren( id ){
     return await NOTION.blocks.children.list({block_id: id});
 }
+*/ 
 
 //style is dictionary
 async function createNewPage( DATABASE_ID, style ){
+    //console.log( "✍️✍️✍️createNewPage✍️✍️✍️ ")
+
     const response = await NOTION.pages.create({
         parent: {
           database_id: DATABASE_ID,

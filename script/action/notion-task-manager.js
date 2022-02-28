@@ -57,9 +57,8 @@ export var MoveTodaysLeftTask = async()=>{
 
 
 export var CreateNewLog = async () =>{
-    console.log("❤️CreateNewLog()")
     await notion.createNewPage( notion.databases["Worklog"] ); 
-    channel.send(`I just created new [${mmdd(monday)}] Log for you!❤️`)
+    //channel.send(`I just created new [${mmdd(monday)}] Log for you!❤️`)
 }
 
 export async function clearChannel(){

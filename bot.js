@@ -14,6 +14,9 @@ discord.on("interactionCreate", async interaction=>{
       tweet(text);
       await interaction.reply("Tweeted")
     }
+    if(name == "clear"){
+      Action.clearChannel();
+    }
   }
 })
 

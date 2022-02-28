@@ -1,9 +1,10 @@
 import Discord, { Client, Intents, Collection } from "discord.js";
 import 'dotenv/config' 
-import { reminderInit } from "../action/notion-task-manager.js";
+import { reminderInit, CreateNewLog } from "../action/notion-task-manager.js";
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { REST } from "@discordjs/rest";
 import { Routes } from 'discord-api-types/v9'
+
 
 //export var discord = new Discord.Client({intents:["GUILDS","GUILD_MESSAGES"]});
 export var discord = new Discord.Client({intents:[
@@ -11,7 +12,7 @@ export var discord = new Discord.Client({intents:[
 ]});
 
 
-const newSlash = new SlashCommandBuilder()
+const SlashTweet = new SlashCommandBuilder()
 	.setName('tweet')
 	.setDescription('Post New Tweet')
 	.addStringOption(option =>
@@ -19,8 +20,11 @@ const newSlash = new SlashCommandBuilder()
 			.setDescription('The input to echo back')
 			.setRequired(true));
 
+const SlashClear = new SlashCommandBuilder()
+	.setName('clear')
+	.setDescription('Clear channel')
 
-const commands = [ newSlash ]; 
+const commands = [ SlashTweet, SlashClear]; 
 
 export var channel;
 discord.commands = new Collection(); 
@@ -52,6 +56,7 @@ discord.once("ready", ()=>{
     channel = discord.channels.cache.find(c => c.name === "general")
    // channel.send("I am in✨");
     reminderInit(); 
+    CreateNewLog(); //temp
 
 })
 
