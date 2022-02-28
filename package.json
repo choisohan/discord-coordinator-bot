@@ -15,6 +15,7 @@
     "@discordjs/rest": "^0.3.0",
     "@notionhq/client": "^0.4.13",
     "cron": "^1.8.2",
+    "discord-api-types": "^0.27.3",
     "discord.js": "^13.6.0",
     "dotenv": "^16.0.0",
     "mongoose": "^6.2.3",
