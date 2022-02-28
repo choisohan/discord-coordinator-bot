@@ -50,3 +50,8 @@
 
 ## unsorted
 - [ ] weather notification
+
+
+## SNS
+- [x] Tweeting by discord
+- [ ] Tweet with Image

@@ -1,11 +1,19 @@
 import { discord , channel} from './script/discord-handler.js'
 import { witClient , findIntention } from './script/conversation/wit-handler.js';
 import * as Action from './script/action/notion-task-manager.js'
+import {tweet} from './script/sns/twitter-handler.js'
+
+
 
 // Slash Command
 discord.on("interactionCreate", async interaction=>{
   if(interaction.isCommand()){
-    await interaction.reply("🍎")
+    var name = interaction.commandName;
+    var text = interaction.options._hoistedOptions[0].value 
+    if(name == "tweet"){
+      tweet(text);
+      await interaction.reply("Tweeted")
+    }
   }
 })
 
