@@ -4,7 +4,8 @@ import { monday,mmdd } from '../extra/scheduler.js';
 import { discord , channel } from './discord-handler.js'
 import { CronJob } from 'cron';
 import { ApplicationCommandPermissionType } from 'discord-api-types/v9';
-
+import { allisIn } from '../extra/compare.js';
+import { CommandInteractionOptionResolver } from 'discord.js';
 
 var NOTION; var BLOCKS = [] ;
 class notionClient{
@@ -62,16 +63,22 @@ class notionClient{
 
     async createNewPage( database_ID ){ 
         var pages = await this.getPages(database_ID)
-        var latest = pages[0]
-        var latest = await this.getAllHierarchy( latest ) ; 
-        
-        //console.log("💫" , latest.children[0].column_list )
+        var latest = pages[0];
+       
+        var BUILD = async ( _container ) =>{
 
-        // * / * / * / * / * //
+            var allowed = ["to_do", "heading_1","heading_2", "heading_3", "column", "column_list" ]
+            var all = _container.body.filter( i => allowed.includes(i.type) )
 
-        //console.log( children[0])
-        // * / * / * / * / * //
+            all =  await itemFilter( all,  {checked: true } );
 
+            var leftTodo = all.filter(item => item.type == 'to_do' );
+            _container.header = _container.header.concat(leftTodo);
+            _container.body = all.filter( item => !leftTodo.includes(item) )
+
+            return _container;
+        }
+        latest = await this.allChildren(latest, BUILD  )
         
         const style = { title : mmdd(monday) , emoji : latest.icon.emoji ,  children: latest.children };
         if( "Date" in latest.properties ){
@@ -81,7 +88,10 @@ class notionClient{
             }
             style.date =  date;
         }
+
         await createNewPage(database_ID, style); 
+
+        console.log("🎆🎆🎆 COMPLETE 🎆🎆🎆")
 
         
         
@@ -94,41 +104,63 @@ class notionClient{
         }else{
             return [] }
     }
+    
 
-    async getAllHierarchy( _block ){
 
+    async allChildren( _block , _function ){
+        var container = { body:[], header: [] , footer :[] };  //body, header, bottom
         if( _block.has_children || _block.object == "page" ){
             var arr =  await NOTION.blocks.children.list({ block_id: _block.id });
-            arr = arr.results; 
-
+            container.body = arr.results;
+            if(_function){container = await _function(container)}
+            arr = container.body; 
             
+
             for( var x = 0; x < arr.length ; x++ ){
                 if(arr[x].has_children){
                     console.log( "❤ "+arr[x].type )
                     var arr1 = await NOTION.blocks.children.list({ block_id: arr[x].id });
-                    arr1 = arr1.results; 
-                    arr[x][arr[x].type].children  = arr1;
 
+                    
+                    container.body = arr1.results;
+                    if(_function){container = await _function(container)}
+                    arr1 = container.body;
+                
+                    arr[x][arr[x].type].children  = container.body;
                     for( var y = 0; y < arr1.length ; y++ ){
+                        
                         if(arr1[y].has_children){
-                            console.log( "🧡 "+arr1[y].type )
+                            //console.log( "🧡 "+arr1[y].type )
                             var arr2 = await NOTION.blocks.children.list({ block_id: arr1[y].id });
-                            arr2 = arr2.results;
-                            arr1[y][arr1[y].type].children  = arr2;
+
+                            container.body = arr2.results;
+                            if(_function){container = await _function(container)}
+                            arr2 = container.body;
+
+                            arr1[y][arr1[y].type].children  = container.body;
 
                             for( var z = 0; z < arr2.length ; z++ ){
                                 if(arr2[z].has_children){
-                                    console.log("💛 " +arr2[z].type )
+                                    //console.log("💛 " +arr2[z].type )
                                     var arr3 = await NOTION.blocks.children.list({ block_id: arr2[z].id });
-                                    arr3 = arr3.results; 
-                                    arr2[z][arr2[z].type].children  = arr3;
+
+                                    container.body = arr3.results;
+                                    if(_function){container = await _function(container)}
+                                    arr3 = container.body;
+
+
+                                    arr2[z][arr2[z].type].children  = container.body;
 
                                     for( var w = 0; w < arr3.length ; w++ ){
                                         if(arr3[w].has_children){
                                             console.log("💙 "+arr3[w].type )
                                             var arr4 = await NOTION.blocks.children.list({ block_id: arr3[w].id });
-                                            arr4 = arr4.results; 
-                                            arr3[w][arr3[z].type].children  = arr4;
+                                            
+                                            container.body = arr4.results;
+                                            if(_function){container = await _function(container)}
+                                            arr4 = container.body;
+
+                                            arr3[w][arr3[z].type].children  = container.body;
                                         }
                                     } 
 
@@ -138,10 +170,13 @@ class notionClient{
                     } 
                 } 
             }
+            //header and footer
+
+            arr = container.header.concat(arr)
 
             // Assign
             if( !_block.type ) { _block.type = "children" }
-            _block[_block.type] = arr; 
+            _block[_block.type] = arr;
             return _block; 
         }
     }
@@ -231,6 +266,7 @@ var newPageInfo = async ( DATABASE_ID, style )=>{
 
 
 /////////////////////////
+/*
 async function getAllItems( ID, style ){
     var arr = [];
     
@@ -238,7 +274,7 @@ async function getAllItems( ID, style ){
         .then( resolve =>{
             console.love(resolve)
         })
-}
+}*/
 /*
 async function getLatestTasks( database_ID ){
     var arr = []
@@ -259,6 +295,7 @@ async function getLatestTasks( database_ID ){
 }
 */ 
 //style is dictionary
+/*
 async function getAllChildren( ID , style ){
     var arr = [];
     await getChildren(ID).then( children => {
@@ -272,7 +309,7 @@ async function getAllChildren( ID , style ){
     })
     return(arr)
 }
-
+*/ 
 var itemCheck = ( item, style )=>{
     var check = false;
     if ( Object.keys(style).length > 0 ){
@@ -422,6 +459,8 @@ async function createNewPage( DATABASE_ID, style ){
         },
         children: ("children" in style || style.chldren == [] ) ? style.children : emptyChildren,
       });
+
+    return response; 
 }
 var emptyChildren  = 
     [
@@ -442,3 +481,22 @@ var emptyChildren  =
       ]
       
 export var notion = new notionClient(); 
+
+//removeing 
+var itemFilter = async ( arr, _filters) =>{
+    return await arr.filter(item => {
+        var result = true; 
+        Object.keys(_filters).forEach(key =>{
+            if( key in item[item.type] ){
+                if( item[item.type][key] == _filters[key] ){
+                    result = false;
+                }
+            }
+        })
+        return result; 
+    })
+}
+
+
+
+

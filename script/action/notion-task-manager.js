@@ -54,11 +54,9 @@ export var MoveTodaysLeftTask = async()=>{
     channel.send(text)
 }
 
-
-
 export var CreateNewLog = async () =>{
     await notion.createNewPage( notion.databases["Worklog"] ); 
-    //channel.send(`I just created new [${mmdd(monday)}] Log for you!❤️`)
+    channel.send(`I just created new [${mmdd(monday)}] Log for you!❤️`)
 }
 
 export async function clearChannel(){
@@ -197,3 +195,4 @@ var setAlarm = (reminderDoc) =>{
 
 var lineChange = `
 `
+

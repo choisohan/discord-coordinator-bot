@@ -56,7 +56,7 @@ discord.once("ready", ()=>{
     channel = discord.channels.cache.find(c => c.name === "general")
    // channel.send("I am in✨");
     reminderInit(); 
-    CreateNewLog(); //temp
+    //CreateNewLog(); //temp
 
 })
 
