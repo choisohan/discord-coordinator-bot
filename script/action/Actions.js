@@ -6,6 +6,7 @@ import { CronJob } from 'cron'
 import 'dotenv/config' // ES6
 import { entitiesFilter } from "../handlers/wit-handler.js";
 import { allisIn  } from "../extra/compare.js";
+import { TweetSearchRecentV2Paginator } from "twitter-api-v2";
 
 
 export var TellMeABoutTodaysTask = async () =>{
@@ -206,4 +207,31 @@ export var spreadTodo = async ()=>{
     var latest = pages[0];
     notion.spreadItem(latest , 7 ); 
 
+}
+
+export var tweetThat = async ()=>{
+    await channel.messages.fetch( {limit:5} ).then(messages =>{
+
+        messages = messages.filter( msg => !msg.author.bot )
+
+        var mediaURL = null; var textBody = null; 
+
+        [ messages.last() , messages.first() ].forEach(
+            msg =>{
+                if(msg.attachments.size){
+                    msg.attachments.forEach(att=>{
+                        mediaURL = att.url
+                    })
+                }
+            }
+        )
+        var textBody = !mediaURL ?  messages.first().content : messages.last().content +lineChange + messages.first().content;
+        
+        
+        var tweetPreview = newEmbed( {title: "💬" ,description : textBody , thumbnail :  mediaURL } )
+        
+        channel.send({embeds : [tweetPreview] })
+         
+
+    })
 }

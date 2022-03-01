@@ -35,6 +35,10 @@
   {
     "entities" :["remind","duration"], "intents" : ["request"] , "traits" :{} ,
     "script" : ["Action.createReminder(bot.entities )"] , "alert" :"Do you want me to remind you that time?"
+  },
+  {
+    "entities" :["twitter"], "intents" : ["request"] , "traits" :{} ,
+      "script": ["Action.tweetThat()"]
   }
  
 

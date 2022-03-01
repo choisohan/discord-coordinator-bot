@@ -1,9 +1,9 @@
 import Discord, { Client, Intents, Collection } from "discord.js";
 import 'dotenv/config' 
-import { reminderInit, CreateNewLog , spreadTodo } from "../action/notion-task-manager.js";
+import { reminderInit, CreateNewLog , spreadTodo } from "../action/Actions.js";
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { REST } from "@discordjs/rest";
-import { Routes } from 'discord-api-types/v9'
+import { EmbedType, Routes } from 'discord-api-types/v9'
 
 
 //export var discord = new Discord.Client({intents:["GUILDS","GUILD_MESSAGES"]});
@@ -24,7 +24,7 @@ const SlashClear = new SlashCommandBuilder()
 	.setName('clear')
 	.setDescription('Clear channel')
 
-const commands = [ SlashTweet, SlashClear]; 
+const commands = []//[ SlashTweet, SlashClear]; 
 
 export var channel;
 discord.commands = new Collection(); 
@@ -62,24 +62,18 @@ discord.once("ready", ()=>{
 
 })
 
-/*
-discord.on('ready',()=>{
-    console.log("bot is logged in ")
-    channel = discord.channels.cache.find(c => c.name === "general")
-    reminderInit(); 
-
-
-
-})
-*/ 
 discord.login(process.env.BOT_TOKEN);
 
 
 
 export const newEmbed = (_embeded) =>{
-    return new Discord.MessageEmbed().setTitle(_embeded.title)
-                                    .addFields(_embeded.field)
+    var Embed = new Discord.MessageEmbed();
+    Embed.setDescription("description" in _embeded ? _embeded.description : "")
+    if("title" in _embeded){  Embed.setTitle(_embeded.title); }
+    if("field" in _embeded){ Embed.addFields(_embeded.field)}
+    if("thumbnail" in _embeded){ Embed.setThumbnail(_embeded.thumbnail) }
 
+    return Embed;
 
 }
 
