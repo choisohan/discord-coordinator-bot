@@ -5,7 +5,7 @@ import { reminder } from "../handlers/mongo-handler.js";
 import { CronJob } from 'cron'
 import 'dotenv/config' // ES6
 import { entitiesFilter } from "../handlers/wit-handler.js";
-import { allisIn } from "../extra/compare.js";
+import { allisIn  } from "../extra/compare.js";
 
 
 export var TellMeABoutTodaysTask = async () =>{
@@ -56,6 +56,11 @@ export var MoveTodaysLeftTask = async()=>{
 
 export var CreateNewLog = async () =>{
     await notion.createNewPage( notion.databases["Worklog"] ); 
+    
+    var pages = await notion.getPages( notion.databases["Worklog"] );
+    var latest = pages[0];
+    await notion.spreadItem(latest , 7 ); 
+
     channel.send(`I just created new [${mmdd(monday)}] Log for you!❤️`)
 }
 
@@ -196,3 +201,9 @@ var setAlarm = (reminderDoc) =>{
 var lineChange = `
 `
 
+export var spreadTodo = async ()=>{
+    var pages = await notion.getPages( notion.databases["Worklog"] );
+    var latest = pages[0];
+    notion.spreadItem(latest , 7 ); 
+
+}

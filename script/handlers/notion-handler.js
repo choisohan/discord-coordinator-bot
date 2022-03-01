@@ -4,7 +4,7 @@ import { monday,mmdd } from '../extra/scheduler.js';
 import { discord , channel } from './discord-handler.js'
 import { CronJob } from 'cron';
 import { ApplicationCommandPermissionType } from 'discord-api-types/v9';
-import { allisIn } from '../extra/compare.js';
+import { allisIn ,chunk } from '../extra/compare.js';
 import { CommandInteractionOptionResolver } from 'discord.js';
 
 var NOTION; var BLOCKS = [] ;
@@ -27,7 +27,7 @@ class notionClient{
     }
 
 
-    async getPages( database_ID) {
+    async getPages( database_ID ) {
 
         var DB = await NOTION.databases.query({database_id : database_ID })
         var items = DB.results
@@ -41,16 +41,16 @@ class notionClient{
         return items;
     }
 
-    async getColumns( page_ID ){
+    async getColumns( page ){
         //console.log( "getColumns(" + page_ID +")")
         var Weeks = []; 
 
-        var column_list = await this.getChildren( page_ID );
-        column_list = column_list.results.filter( item =>  item.type=='column_list' );
+        var column_list = await this.getChildren( page );
+        column_list = column_list.filter( item =>  item.type=='column_list' );
         
         for(var x = 0; x < column_list.length ; x++ ){
-            var column = await this.getChildren(column_list[x].id)
-            column = column.results.filter( item =>  item.type=='column'  );
+            var column = await this.getChildren(column_list[x])
+            column = column.filter( item =>  item.type=='column'  );
             
             for ( var y = 0; y < column.length ; y++ ){
                 Weeks.push(column[y])
@@ -212,8 +212,41 @@ class notionClient{
         await NOTION.blocks.delete({block_id: block_ID});
     }
 
+    async spreadItem( page , _maxcount ){
+        // get all chldren
+        var children = await this.getChildren( page ); 
+        children = children.filter( child=> !["column","column_list"].includes(child.type) )
+        //console.log( children.length)
+        var Chunks = chunk( children, _maxcount);
+
+        // get columns
+        var columns = await this.getColumns( page ); 
+        
+        // create new 
+        for(var x = 0; x < Chunks.length; x ++){
+            x = Chunks.length > columns.length ? columns.length : Chunks.length ; 
+            for(var y = 0; y < Chunks[x].length; y ++ ){
+                await NOTION.blocks.children.append({
+                    block_id : columns[x].id, children :[ duplicatedBlock( Chunks[x][y] ) ]
+                })
+                await NOTION.blocks.delete({block_id : Chunks[x][y].id })
+            }
+        }
+    }
+
 }
 
+
+var duplicatedBlock = (block) => {
+    var Text = block[block.type].text;
+    console.log( "🍈 ",Text )
+    var object =  {object: 'block' }
+    object.type = block.type
+    object[block.type] = {
+        text: Text,checked: false
+    }
+    return object
+}
 
 var newPageInfo = async ( DATABASE_ID, style )=>{
     console.log( DATABASE_ID )

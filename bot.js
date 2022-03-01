@@ -4,7 +4,6 @@ import * as Action from './script/action/notion-task-manager.js'
 import {tweet} from './script/handlers/twitter-handler.js'
 
 
-
 // Slash Command
 discord.on("interactionCreate", async interaction=>{
   if(interaction.isCommand()){

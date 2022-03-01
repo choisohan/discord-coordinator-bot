@@ -1,6 +1,6 @@
 import Discord, { Client, Intents, Collection } from "discord.js";
 import 'dotenv/config' 
-import { reminderInit, CreateNewLog } from "../action/notion-task-manager.js";
+import { reminderInit, CreateNewLog , spreadTodo } from "../action/notion-task-manager.js";
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { REST } from "@discordjs/rest";
 import { Routes } from 'discord-api-types/v9'
@@ -55,8 +55,10 @@ discord.once("ready", ()=>{
     
     channel = discord.channels.cache.find(c => c.name === "general")
    // channel.send("I am in✨");
-    reminderInit(); 
+    //reminderInit(); 
     //CreateNewLog(); //temp
+    //spreadTodo()
+    
 
 })
 

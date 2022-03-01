@@ -27,3 +27,17 @@ export var anyisIn = (arr1, arr2)=>{
     while ( !bool  && i< arr1.length);
     return bool; 
 }
+
+//to sub array
+export function chunk (arr, len) {
+
+    var chunks = [],
+        i = 0,
+        n = arr.length;
+  
+    while (i < n) {
+      chunks.push(arr.slice(i, i += len));
+    }
+  
+    return chunks;
+  }
