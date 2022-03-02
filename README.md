@@ -17,10 +17,13 @@
 
 # Todo
 
+## Auth
+- [ ] only discord and mongo key on server
+- [ ] all the auth key stored in mongo
+
 ## Main Discord
 - [x] clear channel command 
 - [x] Server in heroku
-
 
 ## Notion
 - [x] return scheduled message
@@ -35,11 +38,22 @@
 - [x] move to_do block between 'worklog' and 'tasks'
 
 
-
 ## Reminder / Scheduler
 - [x] mongoDB store
 - [x] convertWitTimeToCron()
 - [x] wit_duration to cronTime -> - [ ] getCronTime() check out again
+
+- [ ] notion 'reminder' database
+------
+notion formula
+
+
+_hour : empty(prop("Unit")) ? if(hour(prop("Date")) + minute(prop("Date")) == 0, format(hour(prop("Edited"))), format(hour(prop("Date")))) : if(prop("Unit") == "Hour", "*/" + format(if(empty(prop("Recurring")), 1, prop("Recurring"))), "*")
+
+------
+
+
+
 - [ ] one time event -> clean up every in a while?
 - [ ] recurring tasks
 - [ ] remind later
@@ -54,4 +68,4 @@
 
 ## SNS
 - [x] Tweeting by discord
-- [ ] Tweet with Image
+- [ ] Tweet with Image ( uploading from discord media url doesn't work.. hm )

@@ -1,6 +1,6 @@
 import Discord, { Client, Intents, Collection } from "discord.js";
 import 'dotenv/config' 
-import { reminderInit, CreateNewLog , spreadTodo } from "../action/Actions.js";
+import { reminderInit , testRun } from "../action/Actions.js";
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { REST } from "@discordjs/rest";
 import { EmbedType, Routes } from 'discord-api-types/v9'
@@ -55,7 +55,8 @@ discord.once("ready", ()=>{
     
     channel = discord.channels.cache.find(c => c.name === "general")
    // channel.send("I am in✨");
-    //reminderInit(); 
+    reminderInit(); 
+    testRun();
     //CreateNewLog(); //temp
     //spreadTodo()
     
@@ -72,6 +73,8 @@ export const newEmbed = (_embeded) =>{
     if("title" in _embeded){  Embed.setTitle(_embeded.title); }
     if("field" in _embeded){ Embed.addFields(_embeded.field)}
     if("thumbnail" in _embeded){ Embed.setThumbnail(_embeded.thumbnail) }
+    if("image" in _embeded){ Embed.setImage(_embeded.thumbnail) }
+
 
     return Embed;
 

@@ -32,6 +32,7 @@ class mongoDB {
 }
 
 //Create DB
+/*
 export const reminder = new mongoDB('reminder' ,
   { name : String,
     cronTime: String,
@@ -39,7 +40,7 @@ export const reminder = new mongoDB('reminder' ,
     message : [String],
     isRecurring : Boolean
   }); 
-
+*/
 /*
 export const memory = new mongoDB('memory',
   { name : String, 

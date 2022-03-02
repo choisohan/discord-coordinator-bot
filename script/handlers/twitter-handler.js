@@ -13,11 +13,19 @@ export var client = new TwitterApi({
 const twitterClient = client.readWrite;
 
 
-
-export const tweet = async (text) => {
+export const tweet = async (text , mediaURLs ) => {
     try {
-        await twitterClient.v1.tweet( text)
+        /*
+        const mediaIds = await Promise.all(
+            mediaURLs.map( url => twitterClient.v1.uploadMedia(url) )
+            )
+        await twitterClient.v1.tweet( text , { media_ids: mediaIds } )
+        */
+        await twitterClient.v1.tweet( text )
+
     } catch(err){
         console.log(err)
     }
 }
+//tweet('test', ['https://media.nationalgeographic.org/assets/photos/000/263/26383.jpg'])
+//tweet('test tweet',[])

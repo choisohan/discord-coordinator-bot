@@ -19,9 +19,6 @@ class notionClient{
                     this.databases[item.child_database.title] = item.id
                }
            })
-           //
-           //
-
         }
         getDatas()
     }
@@ -61,26 +58,15 @@ class notionClient{
         }
     }
 
-    async createNewPage( database_ID ){ 
+    async createNewPage( database_ID, BUILD ){ 
         var pages = await this.getPages(database_ID)
         var latest = pages[0];
        
-        var BUILD = async ( _container ) =>{
-
-            var allowed = ["to_do", "heading_1","heading_2", "heading_3", "column", "column_list" ]
-            var all = _container.body.filter( i => allowed.includes(i.type) )
-
-            all =  await itemFilter( all,  {checked: true } );
-
-            var leftTodo = all.filter(item => item.type == 'to_do' );
-            _container.header = _container.header.concat(leftTodo);
-            _container.body = all.filter( item => !leftTodo.includes(item) )
-
-            return _container;
-        }
+        //BUILD = BUILD!= null ? BUILD : function(x){return x }; 
         latest = await this.allChildren(latest, BUILD  )
         
-        const style = { title : mmdd(monday) , emoji : latest.icon.emoji ,  children: latest.children };
+        //emoji: icon" in latest ? latest.icon.emoji :
+        const style = { title : mmdd(monday) , children: latest.children };
         if( "Date" in latest.properties ){
             var date = {start : latest.properties.Date.date.start}
             if( "end" in latest.properties.Date.date){
@@ -89,12 +75,23 @@ class notionClient{
             style.date =  date;
         }
 
-        await createNewPage(database_ID, style); 
+        var newPage = await createNewPage(database_ID, style); 
+        return newPage;
+    }
+    
+    async modifyPage( _page , _properties ){
+        _properties = Object.entries(_properties).filter = ( [ key , value ] ) => _page.includes( key ) ;
+        _properties = Object.fromEntries(properies)
+        console.log( "🌸",_properties )
 
-        console.log("🎆🎆🎆 COMPLETE 🎆🎆🎆")
-
-        
-        
+        //_properties = { name of properties : value , value }
+         
+        /*
+        const response = await NOTION.pages.update({
+            page_id: _page.id,
+            properties :{ }
+        })
+        */ 
     }
 
     async getChildren( _block ){
@@ -108,14 +105,16 @@ class notionClient{
 
 
     async allChildren( _block , _function ){
+
+    
         var container = { body:[], header: [] , footer :[] };  //body, header, bottom
         if( _block.has_children || _block.object == "page" ){
             var arr =  await NOTION.blocks.children.list({ block_id: _block.id });
             container.body = arr.results;
-            if(_function){container = await _function(container)}
-            arr = container.body; 
-            
 
+            if(_function ){container = await _function(container)}
+            arr = container.body; 
+          
             for( var x = 0; x < arr.length ; x++ ){
                 if(arr[x].has_children){
                     console.log( "❤ "+arr[x].type )
@@ -177,6 +176,7 @@ class notionClient{
             // Assign
             if( !_block.type ) { _block.type = "children" }
             _block[_block.type] = arr;
+            console.log( "💥" )
             return _block; 
         }
     }
@@ -205,7 +205,7 @@ class notionClient{
 
     async createNew( DATABASE_ID , style ){
         var info = await newPageInfo( DATABASE_ID , style );
-        await NOTION.pages.create( info ); 
+        return await NOTION.pages.create( info  ); 
     }
 
     async deleteItem( block_ID ){
@@ -233,10 +233,23 @@ class notionClient{
             }
         }
     }
+    async itemFilter ( arr, _filters){
+        return await arr.filter(item => {
+            var result = true; 
+            Object.keys(_filters).forEach(key =>{
+                if( key in item[item.type] ){
+                    if( item[item.type][key] == _filters[key] ){
+                        result = false;
+                    }
+                }
+            })
+            return result; 
+        })
+    }
 
 }
 
-
+////////////////////////////////////
 var duplicatedBlock = (block) => {
     var Text = block[block.type].text;
     console.log( "🍈 ",Text )
@@ -247,9 +260,42 @@ var duplicatedBlock = (block) => {
     }
     return object
 }
+var PropertyHQ = ( _type, _value ) =>{
+    if ( _type == 'text'){
+        return { type :_type, [_type]: { content : _value } } 
+    }
+    if( _type == 'title' ) {
+        return { type :_type, [_type]: [  { type :"text", text: { content : _value } }   ]} 
+    }
+    if( _type == "date"){
+        return { type :_type, [_type]: { start : _value , end : null }} ;
+    }
+    if( _type == 'select' ){
+        return { type :_type, [_type]: { name : _value }} 
+    }
+    if ( _type =='number'){
+        return { type :_type, [_type]: _value }
+    }
+}
+var newPageInfo =  async (DATABASE_ID, _style) =>{
+    var DB = await NOTION.databases.query({database_id : DATABASE_ID })
+    var _scanned = DB.results[0].properties; 
+    _style.Name = 'Name' in _style ? _style.Name : "New"; 
+    var _properties = {} 
 
+    Object.keys(_style).forEach(_st => {
+        _properties[_st] = PropertyHQ(_scanned[_st].type, _style[_st] ); 
+        console.log( _scanned[_st] )
+        console.log( _properties[_st] )        
+    })
+
+
+    var _info = { parent: {database_id : DATABASE_ID}, properties: _properties}
+
+    return  _info
+}
+/*
 var newPageInfo = async ( DATABASE_ID, style )=>{
-    console.log( DATABASE_ID )
     var DB = await NOTION.databases.query({database_id : DATABASE_ID })
     var info = await DB.results[0];
     info.parent = {database_id : DATABASE_ID    }
@@ -292,7 +338,7 @@ var newPageInfo = async ( DATABASE_ID, style )=>{
       
     return info
 }
-
+*/ 
 
 
 
@@ -465,13 +511,16 @@ async function getChildren( id ){
 //style is dictionary
 async function createNewPage( DATABASE_ID, style ){
     //console.log( "✍️✍️✍️createNewPage✍️✍️✍️ ")
+    
 
     const response = await NOTION.pages.create({
         parent: {
           database_id: DATABASE_ID,
         },
         icon : {
-            emoji : ("emoji" in style) ? style.emoji : "✍️"
+           // emoji : ("emoji" in style) ? style.emoji : "✍️"
+            emoji :  "✍️"
+
         },
         properties: {
           Name: {
@@ -514,22 +563,6 @@ var emptyChildren  =
       ]
       
 export var notion = new notionClient(); 
-
-//removeing 
-var itemFilter = async ( arr, _filters) =>{
-    return await arr.filter(item => {
-        var result = true; 
-        Object.keys(_filters).forEach(key =>{
-            if( key in item[item.type] ){
-                if( item[item.type][key] == _filters[key] ){
-                    result = false;
-                }
-            }
-        })
-        return result; 
-    })
-}
-
 
 
 

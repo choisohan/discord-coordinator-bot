@@ -1,13 +1,12 @@
 import { notion } from "../handlers/notion-handler.js";
 import { channel,newEmbed } from "../handlers/discord-handler.js";
 import { monday,mmdd } from '../extra/scheduler.js';
-import { reminder } from "../handlers/mongo-handler.js";
+//import { reminder } from "../handlers/mongo-handler.js";
 import { CronJob } from 'cron'
 import 'dotenv/config' // ES6
 import { entitiesFilter } from "../handlers/wit-handler.js";
 import { allisIn  } from "../extra/compare.js";
-import { TweetSearchRecentV2Paginator } from "twitter-api-v2";
-
+import { tweet } from "../handlers/twitter-handler.js";
 
 export var TellMeABoutTodaysTask = async () =>{
     var pages = await notion.getPages( notion.databases["Worklog"] );
@@ -56,12 +55,21 @@ export var MoveTodaysLeftTask = async()=>{
 }
 
 export var CreateNewLog = async () =>{
-    await notion.createNewPage( notion.databases["Worklog"] ); 
-    
+
+    var BUILD = async ( _container ) =>{
+        var allowed = ["to_do", "heading_1","heading_2", "heading_3", "column", "column_list" ]
+        var all = _container.body.filter( i => allowed.includes(i.type) )
+        all =  await notion.itemFilter( all,  {checked: true } );
+        var leftTodo = all.filter(item => item.type == 'to_do' );
+        _container.header = _container.header.concat(leftTodo);
+        _container.body = all.filter( item => !leftTodo.includes(item) )
+        return _container;
+    }
+    await notion.createNewPage( notion.databases["Worklog"] , BUILD ); 
+
     var pages = await notion.getPages( notion.databases["Worklog"] );
     var latest = pages[0];
     await notion.spreadItem(latest , 7 ); 
-
     channel.send(`I just created new [${mmdd(monday)}] Log for you!❤️`)
 }
 
@@ -75,18 +83,20 @@ export async function clearChannel(){
 
 
 export async function reminderInit(){
+    var reminders = await notion.getPages( notion.databases["Reminders"] );
 
-    for await (const doc of reminder.model.find() ){
-        if( "cronTime" in doc ){
-            console.log(doc.cronTime )            
-            var job =new CronJob(doc.cronTime, ()=>{setAlarm(doc);                    
-                }, null, null , process.env.TIMEZONE)
-            job.start()
-        }
-    }
+    //console.log( reminders[0].properties['Cron Time'].formula.string);
+    reminders.forEach( reminder => {
+        var cronTime = reminder.properties['Cron Time'].formula.string;
+        var name = reminder.properties['Name'].title[0].plain_text 
+        console.log( "setting alarm for ", cronTime, name)
+        
+        var job =new CronJob( cronTime , ()=>{ sendAlarm(name );                    
+        }, null, null , process.env.TIMEZONE);
+        job.start()
+    })
+
 }
-
-//new CronJob("1/", ()=>{console.log("🐣")}).start;                    
 
 
 
@@ -103,11 +113,11 @@ var getCalendar = (wit_datetime ) =>{
         }
     })[0];
 }
+
 var getCronTime = ( _cal )=> {
     var out = ""; var CAL ={ min: "*", hour:"*", day: "*", month: "*"}; 
     if( allisIn(["year","month","day","hour","min"],Object.keys(_cal))){
-        //this is calendar
-        CAL = _cal; 
+        CAL = _cal; //this is calendar
     }
     else{
         var today= new Date(); 
@@ -138,18 +148,46 @@ var getCronTime = ( _cal )=> {
     return out.substring(0, out.length-1); 
 }
 
-var months = [ "January", "February", "March", "April", "May", "June", 
-           "July", "August", "September", "October", "November", "December" ];
-
-        
 
 
+export async function createReminder( _entities){
+    // 0. sort
+    var entitie = entitiesFilter(_entities); 
+    var _agenda = entitie.agenda_entry ? entitie.agenda_entry : "something" ;
+    var style = { Name : _agenda }
+    if('duration' in entitie){
+        //it's recurring task
+        style.Unit = Object.keys(entitie.duration)[0] ;
+        style.Recurring = Object.values(entitie.duration)[0] ;
+    }
+    else{
+        //it's one time event
+        var CAL = getCalendar(entitie.datetime);
+        style.Date = CAL.year +"-" + CAL.month +"-"+CAL.day
+    }
+    
+    // 1. add notion
+    var page = await notion.createNew( notion.databases["Reminders"] , style ); 
+    var cronTime = page.properties['Cron Time'].formula.string ;
+    
+    // 2. set Cron
+    new CronJob( cronTime ,
+        ()=>{ sendAlarm( _agenda );},
+        null, null , process.env.TIMEZONE).start();
+
+}
+
+export function testRun(){
+}
+
+
+
+
+/*
 export function createReminder( _entities){
     var entitie = entitiesFilter(_entities); 
-    console.log( entitie)
     
-    
-    
+        
     var _agenda = entitie.agenda_entry ? entitie.agenda_entry : "something" ;
     var _isRecurring = entitie.every ? true : false
 
@@ -157,7 +195,31 @@ export function createReminder( _entities){
     var _duration = "duration" in entitie ? entitie.duration : null ; 
 
     var _cronTime = _calendar ?  getCronTime(_calendar) : _duration ? getCronTime(_duration) : null;
+
     if(_cronTime){
+
+
+        // 1.
+        var _newReminder = await notion.createNewPage( notion.databases["Reminders"] , null );
+        var _properties = {
+            "Name" : _agenda,
+            "Cron Time ": _cronTime,
+            "Script" : null
+        }
+        notion.modifyPage( _newReminder , _properties ) ;
+
+
+        // 2. if it's same day, add cron
+        var Days =  parseInt(new Date('2022,2,25') - new Date() ) / (1000 * 60 * 60 * 24) ;
+        if (Days > 0 ){
+            var job = new CronJob(_cronTime, ()=>{ 
+               // setAlarm(doc); 
+            }, null, null , process.env.TIMEZONE); 
+            job.start();
+        } 
+        channel.send("I just created the ✨⏰new reminder for you");
+
+        /*
         // 1. add to doc
         Promise.resolve(reminder.add({
             name : _agenda,
@@ -178,24 +240,19 @@ export function createReminder( _entities){
             channel.send("I just created the ✨⏰new reminder for you");
         
         })
+
     }
     else{
         console.log( "🌀ERROR : ", _calendar, _duration)
     }
-    
-
 
 }
+*/ 
 
-var setAlarm = (reminderDoc) =>{
-    if(reminderDoc.isRecurring){
-        channel.send("⏰ Time for " + reminderDoc.name  +"!" );
-    }
-    else{
-        //Destroy
-        channel.send("⏰⏰⏰⏰ it's time for " + reminderDoc.name  +"!" );
-        reminder.deleteOne({_id: reminderDoc._id});
-    }
+
+
+var sendAlarm = ( message ) =>{
+    channel.send("⏰ Time for " + message  +"!" );
 }
 
 
@@ -210,28 +267,40 @@ export var spreadTodo = async ()=>{
 }
 
 export var tweetThat = async ()=>{
-    await channel.messages.fetch( {limit:5} ).then(messages =>{
 
-        messages = messages.filter( msg => !msg.author.bot )
+    await channel.messages.fetch( {limit:5} ).then( messages =>{
 
-        var mediaURL = null; var textBody = null; 
+        // 0. Clean up
+        messages = messages.filter( msg => !msg.author.bot );
+        var keys = Array.from(messages.keys())
+        //delete keys[0]
 
-        [ messages.last() , messages.first() ].forEach(
-            msg =>{
-                if(msg.attachments.size){
-                    msg.attachments.forEach(att=>{
-                        mediaURL = att.url
-                    })
-                }
-            }
-        )
-        var textBody = !mediaURL ?  messages.first().content : messages.last().content +lineChange + messages.first().content;
-        
-        
-        var tweetPreview = newEmbed( {title: "💬" ,description : textBody , thumbnail :  mediaURL } )
-        
+        // 1. Assign         
+        var textBody = messages.get(keys[1]).content.length != 0 ?
+                    messages.get(keys[1]).content : messages.get(keys[2]).content;
+
+        var mediaURLs = messages.get(keys[1]).attachments.size ?
+                    messages.get(keys[1]).attachments :
+                        messages.get(keys[2]).attachments.size ?
+                        messages.get(keys[2]).attachments  : null ;
+
+        if(mediaURLs){
+            mediaURLs = Array.from( mediaURLs.values() )
+            mediaURLs = mediaURLs.map( media => media.attachment )
+        }
+
+        // 2. Create Message 
+        var tweetPreview = newEmbed( 
+            {title: "💬 Your Tweet " ,description : textBody })
+        tweetPreview.setImage(mediaURLs[0]);
+
         channel.send({embeds : [tweetPreview] })
          
+        // 3. ⬜ Add checking feature before posting
+
+        
+        // 4. Post Tweet
+            tweet(text, mediaURLs)
 
     })
 }

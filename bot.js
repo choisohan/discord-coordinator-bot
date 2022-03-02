@@ -51,7 +51,7 @@ function talk(msg){
     Promise.resolve(findIntention(entities, intents, traits)).then( findDB =>{
       
       //console.log("🍎🍎🍎🍎🍎🍎🍎🍎🍎")
-     // console.log(entities,",", intents,",",traits )
+      //console.log(entities,",", intents,",",traits )
       //console.log("🍎🍎🍎🍎🍎🍎🍎🍎🍎")
       
 

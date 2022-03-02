@@ -21,7 +21,7 @@ export const entitiesFilter = ( _entities ) =>{
                     duration[unit] = _entities[key][0][unit]
                 }
             })
-            console.log( duration)
+            //console.log( duration)
             entities[_entities[key][0].role]=  duration ; //_entities[key][0].normalized.value
         }
         else{
@@ -50,7 +50,7 @@ export const findIntention = async ( _entities, _intents, _traits  ) =>{
     var entities = entitiesFilter(_entities); 
     var intents = intentFilter(_intents); 
     var traits = traitFilter(_traits); 
-    console.log( "🐊",entities,intents,traits )
+    //console.log( "🐊",entities,intents,traits )
 
     do {
         var db = talkDB[i];
@@ -90,7 +90,7 @@ export const findIntention = async ( _entities, _intents, _traits  ) =>{
     
         // fin 
         var result = [entitieIn, intentIn, traitKeyIn, traitValIn ].includes(false);
-        console.log(entitieIn, intentIn, traitKeyIn, traitValIn )
+        //console.log(entitieIn, intentIn, traitKeyIn, traitValIn )
         if ( !result ){
             findDB = db;
         }
