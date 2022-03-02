@@ -277,118 +277,34 @@ var PropertyHQ = ( _type, _value ) =>{
         return { type :_type, [_type]: _value }
     }
 }
+
 var newPageInfo =  async (DATABASE_ID, _style) =>{
+    
     var DB = await NOTION.databases.query({database_id : DATABASE_ID })
-    var _scanned = DB.results[0].properties; 
-    _style.Name = 'Name' in _style ? _style.Name : "New"; 
-    var _properties = {} 
 
-    Object.keys(_style).forEach(_st => {
-        _properties[_st] = PropertyHQ(_scanned[_st].type, _style[_st] ); 
-        console.log( _scanned[_st] )
-        console.log( _properties[_st] )        
-    })
-
-
-    var _info = { parent: {database_id : DATABASE_ID}, properties: _properties}
-
-    return  _info
-}
-/*
-var newPageInfo = async ( DATABASE_ID, style )=>{
-    var DB = await NOTION.databases.query({database_id : DATABASE_ID })
-    var info = await DB.results[0];
-    info.parent = {database_id : DATABASE_ID    }
-
-    var _remove = ['object' ,'id', 'created_time' , 'last_edited_time' , 'created_by','last_edited_by', 'cover' ,'url']
-    _remove.forEach( key =>{
-        delete info[key]
-    })
-
-    var _Properties = info.properties;
-    if('Property' in _Properties ){
-        delete _Properties.Property
+    if( DB.results.length == 0 ){
+        //failed
+        await NOTION.pages.create( { parent : {database_id: DATABASE_ID} , Name : PropertyHQ("title","New") } )
+        await newPageInfo(DATABASE_ID , _style );
     }
+    else{
+        var _scanned = DB.results[0].properties; 
+        _style.Name = 'Name' in _style ? _style.Name : "New"; 
+        var _properties = {} 
     
-    Object.keys( _Properties).forEach( async key =>{
-        var type = await _Properties[key].type;
-        var type_value = _Properties[key][type];
-        delete _Properties[key].id;
-
-        //Empty all
-        if( Array.isArray(type_value)  ) {
-            var obj = _Properties[key][type][0];
-            if(obj){
-                obj[obj.type].content = style[key]
-                if("plain_text" in obj){ obj["plain_text"] = style[key] }
-                _Properties[key][type] = [obj] ;
-            }
-
-        }
-        else if( typeof(type_value)=="boolean" ){
-            _Properties[key][type] = false; 
-        }
-        else{
-            _Properties[key][type] = null; 
-        }
-
-    }) 
-
-    info.properties= _Properties;
-      
-    return info
-}
-*/ 
-
-
-
-
-
-/////////////////////////
-/*
-async function getAllItems( ID, style ){
-    var arr = [];
+        Object.keys(_style).forEach(_st => {
+            _properties[_st] = PropertyHQ(_scanned[_st].type, _style[_st] ); 
+            console.log( _scanned[_st] )
+            console.log( _properties[_st] )        
+        })
     
-    await Promise.resolve(getChildren(ID))
-        .then( resolve =>{
-            console.love(resolve)
-        })
-}*/
-/*
-async function getLatestTasks( database_ID ){
-    var arr = []
-    //var today_day = new Date().getDay(); 
-    await Promise.resolve( getPages(  database_ID  ))
-        .then( pages => {
-            var latest = pages[0];
-            Promise.resolve( getColumnItems(latest.id)).then( Weeks =>{
-                var id  = Weeks[today_day].id;
-                Promise.resolve( getAllChildren( id, {type:"to_do"}) ). then (P=>{
-                    P.forEach( p => {
-                        arr.push(p)
-                    })
-                    return arr
-                })
-            });
-        })
+    
+        var _info = { parent: {database_id : DATABASE_ID}, properties: _properties}
+    
+        return  _info
+    }
 }
-*/ 
-//style is dictionary
-/*
-async function getAllChildren( ID , style ){
-    var arr = [];
-    await getChildren(ID).then( children => {
-        children.results.forEach(child1=>{
-            if( itemCheck( child1 , style )){
-                //console.log( child1 , style)
-                arr.push ( child1 )  ; 
-            }
 
-        })
-    })
-    return(arr)
-}
-*/ 
 var itemCheck = ( item, style )=>{
     var check = false;
     if ( Object.keys(style).length > 0 ){
@@ -519,8 +435,6 @@ async function createNewPage( DATABASE_ID, style ){
         },
         icon : {
            // emoji : ("emoji" in style) ? style.emoji : "✍️"
-            emoji :  "✍️"
-
         },
         properties: {
           Name: {
