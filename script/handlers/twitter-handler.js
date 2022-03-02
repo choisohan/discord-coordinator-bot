@@ -15,13 +15,14 @@ const twitterClient = client.readWrite;
 
 export const tweet = async (text , mediaURLs ) => {
     try {
-        /*
+        //maybe use xiaos 
         const mediaIds = await Promise.all(
-            mediaURLs.map( url => twitterClient.v1.uploadMedia(url) )
+            //mediaURLs.map( url => twitterClient.v1.uploadMedia(url) )
+            mediaURLs.map( url => twitterClient.v1.uploadMedia( Buffer.from(rotatedImage), { type: 'png' })  )
             )
         await twitterClient.v1.tweet( text , { media_ids: mediaIds } )
-        */
-        await twitterClient.v1.tweet( text )
+        
+        //await twitterClient.v1.tweet( text )
 
     } catch(err){
         console.log(err)

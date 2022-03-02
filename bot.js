@@ -1,25 +1,20 @@
 import { discord , channel} from './script/handlers/discord-handler.js'
 import { witClient , findIntention } from './script/handlers/wit-handler.js';
 import * as Action from './script/action/Actions.js'
-import {tweet} from './script/handlers/twitter-handler.js'
+
+
 
 
 // Slash Command
+/*
 discord.on("interactionCreate", async interaction=>{
-  console.log( interaction)
-  /*
   if(interaction.isCommand()){
-    var name = interaction.commandName;
-    var text = interaction.options._hoistedOptions[0].value 
-    if(name == "tweet"){
-      tweet(text);
-      await interaction.reply("Tweeted")
-    }
-    if(name == "clear"){
-      Action.clearChannel();
-    }
-  }*/ 
+  }
 })
+*/ 
+
+
+
 discord.on("messageCreate", async msg=>{
   if(!msg.author.bot){
 
