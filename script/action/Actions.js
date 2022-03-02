@@ -1,11 +1,9 @@
+import 'dotenv/config' // ES6
 import { notion } from "../handlers/notion-handler.js";
 import { channel,newEmbed } from "../handlers/discord-handler.js";
 import { monday,mmdd } from '../extra/scheduler.js';
-//import { reminder } from "../handlers/mongo-handler.js";
 import { CronJob } from 'cron'
-import 'dotenv/config' // ES6
 import { entitiesFilter } from "../handlers/wit-handler.js";
-import { allisIn  } from "../extra/compare.js";
 import { tweet } from "../handlers/twitter-handler.js";
 
 export var TellMeABoutTodaysTask = async () =>{
@@ -23,6 +21,8 @@ export var TellMeABoutTodaysTask = async () =>{
     var _newEmbed = newEmbed( {title: "🌈 " + new Date().toDateString() ,field :{name : "Things to do"  ,value : text } } )
     channel.send({embeds : [_newEmbed] })
 }
+
+
 
 export var TellMeAboutTodaysLeftTask = async()=>{
     var pages = await notion.getPages( notion.databases["Worklog"] );
@@ -45,15 +45,14 @@ export var MoveTodaysLeftTask = async()=>{
     blocks = blocks.filter( b => !b.to_do.checked )
 
     blocks.forEach( async b =>{
-        await notion.createNew( notion.databases["Tasks"] ,{
-            Name: b.to_do.text[0].plain_text
-        } )
+        await notion.createNew( notion.databases["Tasks"] , {Name: b.to_do.text[0].plain_text} , null )
         await notion.deleteItem(b.id)
     })
     var text = "I just moved today's left tasks to [Tasks]" 
     channel.send(text)
 }
 
+var getNotionDate = _date=>{ return _date.toISOString().split('T')[0] }
 export var CreateNewLog = async () =>{
 
     var BUILD = async ( _container ) =>{
@@ -62,15 +61,21 @@ export var CreateNewLog = async () =>{
         all =  await notion.itemFilter( all,  {checked: true } );
         var leftTodo = all.filter(item => item.type == 'to_do' );
         _container.header = _container.header.concat(leftTodo);
-        _container.body = all.filter( item => !leftTodo.includes(item) )
+        _container.body = all.filter( item => !leftTodo.includes(item) ) 
         return _container;
     }
-    await notion.createNewPage( notion.databases["Worklog"] , BUILD ); 
 
-    var pages = await notion.getPages( notion.databases["Worklog"] );
-    var latest = pages[0];
-    await notion.spreadItem(latest , 7 ); 
-    channel.send(`I just created new [${mmdd(monday)}] Log for you!❤️`)
+    var style = { Name : mmdd(monday) }
+    style.Date = {start :getNotionDate(monday)  }
+    
+    var newPage =  await notion.createNew( notion.databases["Worklog"] , style ,BUILD ); 
+    if( newPage.children.length > 0 ){await notion.spreadItem( newPage , 7 );}
+    
+    channel.send(`Here it is!`) 
+    var _newEmbed = newEmbed( {description :` [📒${mmdd(monday)}](${newPage.url}) `} )
+    channel.send({embeds : [_newEmbed] })
+    
+    
 }
 
 export async function clearChannel(){
@@ -80,26 +85,6 @@ export async function clearChannel(){
         channel.send(`Awesome New Beginning❤️`)
       })
 }
-
-
-export async function reminderInit(){
-    var reminders = await notion.getPages( notion.databases["Reminders"] );
-
-    //console.log( reminders[0].properties['Cron Time'].formula.string);
-    reminders.forEach( reminder => {
-        var cronTime = reminder.properties['Cron Time'].formula.string;
-        var name = reminder.properties['Name'].title[0].plain_text 
-        console.log( "setting alarm for ", cronTime, name)
-        
-        var job =new CronJob( cronTime , ()=>{ sendAlarm(name );                    
-        }, null, null , process.env.TIMEZONE);
-        job.start()
-    })
-
-}
-
-
-
 
 var getCalendar = (wit_datetime ) =>{
     return [wit_datetime].map( t => {
@@ -114,41 +99,20 @@ var getCalendar = (wit_datetime ) =>{
     })[0];
 }
 
-var getCronTime = ( _cal )=> {
-    var out = ""; var CAL ={ min: "*", hour:"*", day: "*", month: "*"}; 
-    if( allisIn(["year","month","day","hour","min"],Object.keys(_cal))){
-        CAL = _cal; //this is calendar
-    }
-    else{
-        var today= new Date(); 
-        if("minute" in _cal){
-            CAL.min = "*/"+_cal.minute.toString();
-        } 
-        else if ("hour" in _cal){
-            CAL.min = today.getMinutes();
-            CAL.hour = "*/" + _cal.hour.toString();
-        }
-        else if ("month" in _cal){
-            CAL.min = today.getMinutes();
-            CAL.hour = today.getHours();
-            CAL.day = today.getDay();
-            CAL.month = "*/"+ _cal.month.toString(); 
-        }
-        else if ("year" in _cal){
-            CAL.min = today.getMinutes();
-            CAL.hour = today.getHours();
-            CAL.day = today.getDay();
-            CAL.month =  today.getMonth(); 
-        }
-    }
+export async function reminderInit(){
+    var reminders = await notion.getPages( notion.databases["Reminders"] );
 
-    [CAL.min, CAL.hour, CAL.day , CAL.month, "*" ].forEach(
-        t=> {out += t +" "}
-    ) 
-    return out.substring(0, out.length-1); 
+    //console.log( reminders[0].properties['Cron Time'].formula.string);
+    reminders.forEach( reminder => {
+        var cronTime = reminder.properties['Cron Time'].formula.string;
+        var name = reminder.properties['Name'].title[0].plain_text 
+        
+        var job =new CronJob( cronTime , ()=>{ sendAlarm(name );                    
+        }, null, null , process.env.TIMEZONE);
+        job.start()
+    })
+
 }
-
-
 
 export async function createReminder( _entities){
     // 0. sort
@@ -163,11 +127,11 @@ export async function createReminder( _entities){
     else{
         //it's one time event
         var CAL = getCalendar(entitie.datetime);
-        style.Date = CAL.year +"-" + CAL.month +"-"+CAL.day
+        style.Date = {start : CAL.year +"-" + CAL.month +"-"+CAL.day , end: null }
     }
     
     // 1. add notion
-    var page = await notion.createNew( notion.databases["Reminders"] , style ); 
+    var page = await notion.createNew( notion.databases["Reminders"] , style ,null ); 
     var cronTime = page.properties['Cron Time'].formula.string ;
     
     // 2. set Cron
@@ -177,85 +141,64 @@ export async function createReminder( _entities){
 
 }
 
+export var tellMeAboutReminders = async () =>{
+    // 1. get
+    var reminders = await notion.getPages( notion.databases["Reminders"] );
+    reminders = reminders.map( item => 
+            { return  {  Name : item.properties.Name.title[0].plain_text,
+                        Date : item.properties.Date.date.start,
+                        Recurring : item.properties.Recurring.number,
+                        Unit : item.properties.Unit.select ? item.properties.Unit.select.name   : null ,
+                        URL : item.url,
+                        id: item.id
+                    }
+            } )
+    // 2. Create Message 
+
+    console.log("🍓",reminders )
+    
+    var _embed = newEmbed({title: "⏰ All Reminders"})
+                 
+    for( var i = 0 ; i < reminders.length ; i ++ ){
+        var _time = reminders[i].Date;
+        _embed.addFields({ name : _time , value : `[ ${i}. ${reminders[i].Name} ](${reminders[i].URL} )` } )
+    }
+
+    channel.send({embeds : [_embed] })  
+    return reminders;
+}
+
+
+export var deleteSelected = async ( _dataDict, _entities ) =>{
+
+    var message = ""
+    if( !_dataDict ){message = "hmmm.... delete from where? 😗❔ "}
+
+    else{
+
+        var numbers = _entities['wit$number:number']
+        numbers = numbers.map( numb => numb.value )
+        for (var i = 0; i < numbers.length ; i ++  ){
+            //console.log( "🎗  "+ numb.id  )
+            var ID = numbers[i]
+            ID= _dataDict[ID].id 
+            await notion.deleteItem(  ID  )
+        }
+
+        message = 'Mission Complete! I deleted ' + numbers.length + "  items 🙌"
+    }
+    channel.send(message)
+    
+    
+}
+
 export function testRun(){
 }
 
 
 
 
-/*
-export function createReminder( _entities){
-    var entitie = entitiesFilter(_entities); 
-    
-        
-    var _agenda = entitie.agenda_entry ? entitie.agenda_entry : "something" ;
-    var _isRecurring = entitie.every ? true : false
-
-    var _calendar = "datetime" in entitie ? getCalendar(entitie.datetime) : null;
-    var _duration = "duration" in entitie ? entitie.duration : null ; 
-
-    var _cronTime = _calendar ?  getCronTime(_calendar) : _duration ? getCronTime(_duration) : null;
-
-    if(_cronTime){
-
-
-        // 1.
-        var _newReminder = await notion.createNewPage( notion.databases["Reminders"] , null );
-        var _properties = {
-            "Name" : _agenda,
-            "Cron Time ": _cronTime,
-            "Script" : null
-        }
-        notion.modifyPage( _newReminder , _properties ) ;
-
-
-        // 2. if it's same day, add cron
-        var Days =  parseInt(new Date('2022,2,25') - new Date() ) / (1000 * 60 * 60 * 24) ;
-        if (Days > 0 ){
-            var job = new CronJob(_cronTime, ()=>{ 
-               // setAlarm(doc); 
-            }, null, null , process.env.TIMEZONE); 
-            job.start();
-        } 
-        channel.send("I just created the ✨⏰new reminder for you");
-
-        /*
-        // 1. add to doc
-        Promise.resolve(reminder.add({
-            name : _agenda,
-            cronTime : _cronTime, 
-            message:[_agenda],
-            script: null,
-            isRecurring: _isRecurring
-        })).then(doc=>{
-
-            // 2. if it's same day, add cron
-            var Days =  parseInt(new Date('2022,2,25') - new Date() ) / (1000 * 60 * 60 * 24) ;
-            if (Days > 0 ){
-                var job = new CronJob(_cronTime, ()=>{ 
-                    setAlarm(doc); 
-                }, null, null , process.env.TIMEZONE); 
-                job.start();
-            } 
-            channel.send("I just created the ✨⏰new reminder for you");
-        
-        })
-
-    }
-    else{
-        console.log( "🌀ERROR : ", _calendar, _duration)
-    }
-
-}
-*/ 
-
-
-
-var sendAlarm = ( message ) =>{
-    channel.send("⏰ Time for " + message  +"!" );
-}
-
-
+var sendAlarm = ( message ) =>{channel.send("⏰ Time for " + message  +"!" );}
 var lineChange = `
 `
 

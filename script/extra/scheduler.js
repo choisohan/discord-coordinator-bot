@@ -1,4 +1,4 @@
-var curr = new Date;
+var curr = new Date();
 
 export var monday = new Date(curr.setDate(curr.getDate() - curr.getDay()));
 

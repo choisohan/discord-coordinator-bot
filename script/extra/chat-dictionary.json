@@ -2,19 +2,14 @@
 
 
 [
-  {
-      "entities" :[] , "intents" : ["greeting"] , "traits" :{} ,
-      "message" : [
-        "Hey Beautiful❤️" ,"Hey Gorgeous❤️", "How are you doing?" ,"Hey" ,"Hi!"
-      ]   
-  },
+
   {
       "entities" :["what","tasks"], "intents" : ["request"] , "traits" :{},
       "script" : ["Action.TellMeABoutTodaysTask()"] 
   },
   {
       "entities" :["create" ,"log"] , "intents" : ["request"] , "traits" :{} ,
-      "script" : ["Action.CreateNewLog()"] , "alert" : "Do you want me to create new log?"  
+      "script" : ["Action.CreateNewLog()"]  
   },
   {
       "entities" :[] , "intents" : ["chat"] , "traits" :{"sentiment":["negative"]} ,
@@ -33,12 +28,16 @@
     "script" : ["Action.createReminder(bot.entities )"] , "alert" :"Do you want me to remind you that time?"
   },
   {
-    "entities" :["remind","duration"], "intents" : ["request"] , "traits" :{} ,
-    "script" : ["Action.createReminder(bot.entities )"] , "alert" :"Do you want me to remind you that time?"
-  },
-  {
     "entities" :["twitter"], "intents" : ["request"] , "traits" :{} ,
       "script": ["Action.tweetThat()"]
+  },
+  {
+    "entities" :["what","remind"], "intents" : ["request"] , "traits" :{} ,
+      "script": ["bot.datas = Action.tellMeAboutReminders()"]
+  },
+  {
+    "entities" :["delete","number"], "intents" : ["request"] , "traits" :{} ,
+    "script": [" Promise.resolve( bot.datas ).then( datas => Action.deleteSelected( datas , bot.entities )); "]
   }
  
 

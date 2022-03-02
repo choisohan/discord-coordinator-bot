@@ -34,7 +34,7 @@ discord.on("messageCreate", async msg=>{
       }
 
       else{
-        talk( msg );
+        await talk( msg );
       }
 
     }
@@ -45,64 +45,58 @@ discord.on("messageCreate", async msg=>{
 
 
 var bot = {}; //this will reset whenever the script reinitiates
-function talk(msg){
+async function talk(msg){
   var mm = msg.content;
-  witClient.message(mm).then( ( {entities, intents, traits} ) => {// 
-    Promise.resolve(findIntention(entities, intents, traits)).then( findDB =>{
-      
-      //console.log("🍎🍎🍎🍎🍎🍎🍎🍎🍎")
-      //console.log(entities,",", intents,",",traits )
-      //console.log("🍎🍎🍎🍎🍎🍎🍎🍎🍎")
-      
+  witClient.message(mm).then( async ( {entities, intents, traits} ) => {// 
+    var findDB = await  findIntention(entities, intents, traits) ; 
+    if(findDB){
+      bot.entities = entities;bot.intents=  intents;bot.traits=  traits;
 
-      
-      if(findDB){
-        if('message' in findDB ){
-          var rand_message = findDB.message[ Math.floor(findDB.message.length * Math.random()) ] ;
-          channel.send(rand_message) ;// send random message from the list
-        }
+      if('message' in findDB ){
+        var rand_message = findDB.message[ Math.floor(findDB.message.length * Math.random()) ] ;
+        channel.send(rand_message) ; // send random message from the list
+      }
 
-        if('script' in findDB ){
-          if( !findDB.entities.includes('yes') && !findDB.entities.includes('no') ){
-            if("alert" in findDB){
-              bot.script=  findDB.script[0]; 
-              bot.entities=  entities;
-              bot.intents=  intents;
-              bot.traits=  traits;
-              var alertMsg = 'alert' in findDB ? findDB.alert : "Do you want to run " + bot.script +"?"
-              channel.send(alertMsg)
-            }
-            else{
-              eval(findDB.script[0])
-            }
-
+      if('script' in findDB ){
+        if( !findDB.entities.includes('yes') && !findDB.entities.includes('no') ){
+          if("alert" in findDB){
+            bot.script =  await findDB.script[0]; 
+            var alertMsg = 'alert' in findDB ? findDB.alert : "Do you want to run " + bot.script +"?"
+            channel.send(alertMsg)
           }
           else{
-            if( findDB.entities.includes("yes") ){
-              if(bot.script){
-                eval(bot.script);
-              }
-              else{
-                channel.send("I don't understand what to do.." )
-              }
-              
+            eval( await findDB.script[0] )
+          }
+        }
+        else{
+          if( findDB.entities.includes("yes") ){
+            if( bot.script ) {
+              eval( await bot.script);
             }
             else{
-              delete bot.script; 
+              channel.send("I don't understand what to do.." )
             }
+            
+          }
+          else{
+            delete bot.script; 
           }
         }
       }
-      else{
-        channel.send("What do you mean?")
-      }
+    }
+    else{
+      channel.send("What do you mean?")
+    }
       
-       
+     // console.log("🍎🍎🍎🍎🍎🍎🍎🍎🍎")
+     // console.log(entities,",", intents,",",traits )
+      //console.log("🍎🍎🍎🍎🍎🍎🍎🍎🍎")
+      
+      
 
       
       
-    })
-    
+
     
 
 
