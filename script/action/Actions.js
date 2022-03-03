@@ -1,9 +1,8 @@
 import 'dotenv/config'
 import { notion } from "../handlers/notion-handler.js";
-import { channel,newEmbed } from "../handlers/discord-handler.js";
+import { channel,discord,newEmbed } from "../handlers/discord-handler.js";
 import { monday,mmdd } from '../extra/scheduler.js';
 import { CronJob } from 'cron'
-import { entitiesFilter } from "../handlers/wit-handler.js";
 import { tweet } from "../handlers/twitter-handler.js";
 import  weather from 'weather-js';
 import { MessageEmbed } from 'discord.js';
@@ -11,7 +10,7 @@ import { MessageEmbed } from 'discord.js';
 
 
 
-
+/*
 export var TellMeAboutTodaysLeftTask = async()=>{
     var pages = await notion.getPages( notion.databases["Worklog"] );
     var columns = await notion.getColumns( pages[0].id );
@@ -39,7 +38,7 @@ export var MoveTodaysLeftTask = async()=>{
     var text = "I just moved today's left tasks to [Tasks]" 
     channel.send(text)
 }
-
+*/ 
 var getNotionDate = _date=>{ return _date.toISOString().split('T')[0] }
 export var CreateNewLog = async () =>{
 
@@ -110,9 +109,8 @@ export async function initCrons( pages ){
 
 }
 
-export async function createReminder( _entities){
+export async function createReminder( entitie){
     // 0. sort
-    var entitie = entitiesFilter(_entities); 
     var _agenda = entitie.agenda_entry ? entitie.agenda_entry : "something" ;
     var style = { Name : _agenda }
     if('duration' in entitie){
@@ -172,7 +170,7 @@ export var deleteSelected = async ( _dataDict, _entities ) =>{
 
     else{
 
-        var numbers = _entities['wit$number:number']
+        var numbers = _entities['number']
         numbers = numbers.map( numb => numb.value )
         for (var i = 0; i < numbers.length ; i ++  ){
             //console.log( "🎗  "+ numb.id  )
@@ -264,23 +262,46 @@ export function getWeather( _embeded , _city ){
     })
 }
 
+var witTimeToDate = _witTime =>{
+    return new Date(_witTime.split('T')[0].replace('-',','))
+}
 
-export var TellMeABoutTasks = async (_entitie) =>{
+export var TellMeAboutTasks = async (_entitie) =>{
+    var date = 'datetime' in _entitie ? witTimeToDate(_entitie.datetime) : new Date()
+    var day =  date.getDay();
+    day = day == 0 ? 6: day - 1;  //start of the week is monday
+
+
     var pages = await notion.getPages( notion.databases["Worklog"] );
     var columns = await notion.getColumns( pages[0] );
-    var today = new Date().getDay() ; 
-    today = today == 0 ? 6: today - 1; 
-    var TodaysColumn = columns[today]; 
-    var blocks = await notion.getChildren( TodaysColumn, {type:'to_do'} );
-    var text = await notion.blocks_to_text(blocks); 
+    var TodaysColumn = columns[day]; 
+    var allTodo = await notion.getChildren( TodaysColumn, {type:'to_do'} );
+    allTodo = allTodo.filter(b => b.to_do )
+    var leftTodo = allTodo.filter( b => !b.to_do.checked );
 
-    var _newEmbed = newEmbed( {title: "🌈 " + new Date().toDateString() ,field :{name : "Things to do"  ,value : text } } )
+    var text = "" ; 
+    var _newEmbed = new MessageEmbed();
+    _newEmbed.setTitle (  "🌈 " + date.toDateString()  ); 
+    if("how_many" in _entitie){
+        text = "You have  " + leftTodo.length.toString() +"/" + allTodo.length.toString() +" tasks" ;
+        _newEmbed.setDescription( text ); 
+    }
+    else{
+        text = !"remain" in _entitie ? await notion.blocks_to_text(allTodo) : await notion.blocks_to_text(leftTodo)
+        _newEmbed.setDescription( text ); 
+    }
     channel.send({embeds : [_newEmbed] })
 }
+
+
+
+
 var notionDateToDate = (stringDate) =>{
     var Cal = stringDate.split("-").map(i => parseInt(i) )
     return new Date(Cal[0], Cal[1]-1, Cal[2]); // ⬜ month number seems larger...
 }
+
+
 export var TellMeAboutProject = async (_entitie)=>{
 
     var pages = await notion.getPages( notion.databases["Projects"] );
@@ -352,7 +373,17 @@ export async function botIn(){
     // When a bot initiate, all the reminder except daily event starts.
     var reminders = await notion.getPages( notion.databases["Reminders"] );
     reminders = await reminders.filter( data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    )
-    initCrons(reminders); 
+    //initCrons(reminders); 
+
+    //test
+    /*
+    TellMeAboutTasks({
+        datetime: '2022-03-03T00:00:00.000-08:00',
+        task: 'thing to do',
+        remain: 'left',
+        what: 'what'
+      }); 
+      */ 
     
 }
 export async function userIn(){

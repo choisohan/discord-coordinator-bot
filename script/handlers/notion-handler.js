@@ -148,7 +148,6 @@ class notionClient{
             var t = Type.text[0].plain_text
             text += t; 
         }
-        console.log(text)
         return text;
     }
     

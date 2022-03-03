@@ -5,7 +5,7 @@ import { allisIn, anyisIn } from '../extra/compare.js';
 const  talkDB = JSON.parse(fs.readFileSync('./script/extra/chat-dictionary.json'));
 
 
-export const witClient = new Wit.Wit({
+export const client = new Wit.Wit({
   accessToken: process.env.WIT_TOKEN,
   logger: new Wit.log.Logger(Wit.log.DEBUG)
 });
@@ -44,12 +44,14 @@ export const traitFilter = ( _traits ) =>{
 }
 ///////////
 
-export const findIntention = async ( _entities, _intents, _traits  ) =>{
+export const findIntention = async ( entities, intents, traits  ) =>{
     var findDB = null ; var i = 0; 
     // 0.
+    /*
     var entities = entitiesFilter(_entities); 
     var intents = intentFilter(_intents); 
     var traits = traitFilter(_traits); 
+    */ 
     //console.log( "🐊",entities,intents,traits )
 
     do {

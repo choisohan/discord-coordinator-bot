@@ -4,8 +4,8 @@
 [
 
   {
-      "entities" :["what","tasks"], "intents" : ["request_notion_read"] , "traits" :{},
-      "script" : ["Action.TellMeABoutTasks(bot.entities)"] 
+      "entities" :["task"], "intents" : ["request_notion_read"] , "traits" :{},
+      "script" : ["Action.TellMeAboutTasks(bot.entities)"] 
   },
   {
     "entities" :["what","project"], "intents" : ["request_notion_read"] , "traits" :{},

@@ -1,5 +1,6 @@
 import { discord , channel} from './script/handlers/discord-handler.js'
-import { witClient , findIntention } from './script/handlers/wit-handler.js';
+//import { witClient , findIntention } from './script/handlers/wit-handler.js';
+import * as Wit from './script/handlers/wit-handler.js';
 import * as Action from './script/action/Actions.js'
 
 
@@ -41,8 +42,15 @@ discord.on("messageCreate", async msg=>{
 var bot = {}; //this will reset whenever the script reinitiates
 async function talk(msg){
   var mm = msg.content;
-  witClient.message(mm).then( async ( {entities, intents, traits} ) => { 
-    var findDB = await  findIntention(entities, intents, traits) ; 
+  Wit.client.message(mm).then( async ( {entities, intents, traits} ) => { 
+
+    var entities = Wit.entitiesFilter(entities); 
+    var intents = Wit.intentFilter(intents); 
+    var traits = Wit.traitFilter(traits); 
+
+    console.log( entities)
+
+    var findDB = await  Wit.findIntention( entities, intents, traits) ; 
     if(findDB){
       bot.entities = entities;bot.intents=  intents;bot.traits=  traits;
 
