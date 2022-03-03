@@ -8,6 +8,10 @@
       "script" : ["Action.TellMeABoutTodaysTask()"] 
   },
   {
+    "entities" :["what","project"], "intents" : ["request"] , "traits" :{},
+    "script" : ["Action.TellMeAboutProject()"] 
+  },
+  {
       "entities" :["create" ,"log"] , "intents" : ["request"] , "traits" :{} ,
       "script" : ["Action.CreateNewLog()"]  
   },

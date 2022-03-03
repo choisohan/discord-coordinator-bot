@@ -275,6 +275,50 @@ export var TellMeABoutTodaysTask = async () =>{
     var _newEmbed = newEmbed( {title: "🌈 " + new Date().toDateString() ,field :{name : "Things to do"  ,value : text } } )
     channel.send({embeds : [_newEmbed] })
 }
+var notionDateToDate = (stringDate) =>{
+    var Cal = stringDate.split("-").map(i => parseInt(i) )
+    return new Date(Cal[0], Cal[1]-1, Cal[2]); // ⬜ month number seems larger...
+}
+export var TellMeAboutProject = async ()=>{
+
+    var pages = await notion.getPages( notion.databases["Projects"] );
+    var Now = new Date(); 
+
+    pages = pages.filter( p => {
+        var P = p.properties ;
+        if(P.Date.date) {
+            if(P.Date.date) {
+                var start = notionDateToDate ( P.Date.date.start ) ;
+                var end =  P.Date.date.end != null ? notionDateToDate( P.Date.date.end ) : start ; 
+                return Now.getTime() <= end.getTime() && Now.getTime() >= start.getTime()
+            }
+        }
+    })
+
+    if(pages.length > 0){
+        //found
+        var title =  pages[0].properties.Name.title[0].plain_text; 
+        var start = pages[0].properties.Date.date.start; 
+        var end = pages[0].properties.Date.date.end; 
+        var leftDays =  Math.floor( (notionDateToDate(end) - Now)/(1000 * 60 * 60 * 24) );
+        leftDays = leftDays < 2 ? leftDays.toString() +" day" :leftDays.toString() +" days"
+        
+        var _embeded = new MessageEmbed()
+                                .setTitle("🏞️" + title )
+                                .addFields({name :'Due' , value : end, inline : true })
+                                .addFields({name :'Left' , value : leftDays, inline : true })
+                    
+       channel.send({embeds : [_embeded] }) 
+                
+
+    }
+    else{
+        channel.send(
+`You don't have any specific project assigned!
+Do anything you like!❤`)
+    }
+
+}
 
 
 
@@ -301,6 +345,6 @@ export async function morningCheckUp(){
 
 export async function init(){
     //reminder
-    reminderInit(); 
+    //reminderInit(); 
 
 }
