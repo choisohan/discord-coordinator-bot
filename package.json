@@ -19,6 +19,8 @@
     "discord-api-types": "^0.27.3",
     "discord.js": "^13.6.0",
     "dotenv": "^16.0.0",
+    "moment": "^2.29.1",
+    "moment-timezone": "^0.5.34",
     "mongoose": "^6.2.3",
     "node-wit": "^6.0.1",
     "nodemon": "^2.0.15",

@@ -9,20 +9,7 @@ import { MessageEmbed } from 'discord.js';
 
 
 
-
 /*
-export var TellMeAboutTodaysLeftTask = async()=>{
-    var pages = await notion.getPages( notion.databases["Worklog"] );
-    var columns = await notion.getColumns( pages[0].id );
-    var today = new Date().getDay() -1 ; 
-    var TodaysColumn = columns[today];
-    var blocks = await notion.getChildren( TodaysColumn.id, {type:'to_do'} );
-    blocks = blocks.filter( b => !b.to_do.checked )
-    var text = "🌈 This is your today's Left tasks, Min 😊" + lineChange; 
-    text += await notion.blocks_to_text(blocks); 
-    channel.send(text)
-}
-
 export var MoveTodaysLeftTask = async()=>{
     var pages = await notion.getPages( notion.databases["Worklog"] );
     var columns = await notion.getColumns( pages[0].id );
@@ -304,43 +291,66 @@ var notionDateToDate = (stringDate) =>{
 
 export var TellMeAboutProject = async (_entitie)=>{
 
-    var pages = await notion.getPages( notion.databases["Projects"] );
     var Now = new Date(); 
-
-    pages = pages.filter( p => {
+    var AllProjects = await notion.getPages( notion.databases["Projects"] );
+    var Scheduled = AllProjects.filter( p => p.properties.Date.date != null && p.properties.Date.date.end != null )
+    var Completed = Scheduled.filter( p => Now.getTime() >= notionDateToDate(p.properties.Date.date.end).getTime() )
+    var Incompleted = Scheduled.filter( p => !Completed.includes(p));
+    /*
+        {
         var P = p.properties ;
         if(P.Date.date) {
+            
             if(P.Date.date) {
-                var start = notionDateToDate ( P.Date.date.start ) ;
-                var end =  P.Date.date.end != null ? notionDateToDate( P.Date.date.end ) : start ; 
-                return Now.getTime() <= end.getTime() && Now.getTime() >= start.getTime()
-            }
-        }
-    })
+               // var start = notionDateToDate ( P.Date.date.start ) ;
+                //var end =  P.Date.date.end != null ? notionDateToDate( P.Date.date.end ) : null ; 
+                //return Now.getTime() <= end.getTime() && Now.getTime() >= start.getTime()
 
-    if(pages.length > 0){
+            }
+            
+        }
+    })*/ 
+
+    var Project ; 
+    if ('next' in _entitie ){
+        Project = Incompleted[1] 
+    }
+    else if ( 'previous' in _entitie ){
+        Project = Completed.at(-1)
+    }
+    else{
+        Project = Incompleted[0] 
+    }
+
+    
+    if( Project ){
         //found
-        var title =  pages[0].properties.Name.title[0].plain_text; 
-        var start = pages[0].properties.Date.date.start; 
-        var end = pages[0].properties.Date.date.end; 
+        var title = Project.properties.Name.title[0].plain_text; 
+        var start = Project.properties.Date.date.start; 
+        var end = Project.properties.Date.date.end; 
         var leftDays =  Math.floor( (notionDateToDate(end) - Now)/(1000 * 60 * 60 * 24) );
         leftDays = leftDays < 2 ? leftDays.toString() +" day" :leftDays.toString() +" days"
         
         var _embeded = new MessageEmbed()
-                                .description(`[ 🏞️ ${title} ](${pages[0].url})`)
-                                .addFields({name :'Due' , value : end, inline : true })
-                                .addFields({name :'Left' , value : leftDays, inline : true })
-
-                    
+        _embeded.setDescription(`[ 🏞️ **${title}** ](${Project.url})`)
+        if('next' in _entitie){
+            //_embeded.addFields({name :'Start' , value : start, inline : true })
+        }
+        else if ( 'previous' in _entitie ){
+            _embeded.addFields({name :'Start' , value : start, inline : true })
+            _embeded.addFields({name :'Due' , value : end, inline : true })
+        }
+        else{
+            _embeded.addFields({name :'Left' , value : leftDays, inline : true })
+        }
        channel.send({embeds : [_embeded] }) 
-                
-
     }
     else{
         channel.send(
 `You don't have any specific project assigned!
 Do anything you like!❤`)
     }
+ 
 
 }
 
@@ -384,6 +394,8 @@ export async function botIn(){
         what: 'what'
       }); 
       */ 
+//next: 'next', 
+    //TellMeAboutProject({ project: 'project', what: 'what' }    );
     
 }
 export async function userIn(){

@@ -8,7 +8,7 @@
       "script" : ["Action.TellMeAboutTasks(bot.entities)"] 
   },
   {
-    "entities" :["what","project"], "intents" : ["request_notion_read"] , "traits" :{},
+    "entities" :["project"], "intents" : ["request_notion_read"] , "traits" :{},
     "script" : ["Action.TellMeAboutProject(bot.entities)"] 
   },
   {
@@ -36,7 +36,7 @@
       "script": ["Action.tweetThat()"]
   },
   {
-    "entities" :["what","remind"], "intents" : ["request_notion_read"] , "traits" :{} ,
+    "entities" :["remind"], "intents" : ["request_notion_read"] , "traits" :{} ,
       "script": ["bot.datas = Action.tellMeAboutReminders()"]
   },
   {
