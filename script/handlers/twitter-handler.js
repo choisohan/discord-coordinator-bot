@@ -1,6 +1,8 @@
 import 'dotenv/config' 
 import { TwitterApi } from 'twitter-api-v2';
-
+import axios from 'axios';
+import * as fs from 'fs'
+import { resolve } from 'path';
 
 export var client = new TwitterApi({
     appKey: process.env.TWITTER_API,
@@ -12,21 +14,44 @@ export var client = new TwitterApi({
 
 const twitterClient = client.readWrite;
 
+//
+/*
+const mediaIds = await Promise.all([
+    twitterClient.v1.uploadMedia('tempFolder/tmp_glttt92xzhz51.png'),
+  ]);
+  
+await twitterClient.v1.tweet('auto tweet test ', { media_ids: mediaIds });
+*/ 
+//
 
-export const tweet = async (text , mediaURLs ) => {
+function writeToFile( _URL ){
+    return new Promise(async (resolve, reject)=>{
+        var response = await axios({method: 'get',url: _URL , responseType: 'stream'});
+        var stream = fs.createWriteStream('tempFolder/tmp_' + _URL.split('/').at(-1)) ;
+        response.data.pipe(stream);
+        stream.on("finish",()=>{
+            console.log("🍊")
+            resolve(stream)
+        })
+    })
+}
+
+export const tweet = async (text , urls ) => {
     try {
-        //maybe use xiaos 
-        const mediaIds = await Promise.all(
-            //mediaURLs.map( url => twitterClient.v1.uploadMedia(url) )
-            mediaURLs.map( url => twitterClient.v1.uploadMedia( Buffer.from(rotatedImage), { type: 'png' })  )
-            )
-        await twitterClient.v1.tweet( text , { media_ids: mediaIds } )
-        
-        //await twitterClient.v1.tweet( text )
 
+        if(urls){
+            const Files = await Promise.all(  urls.map(async url => await writeToFile(url)  )  )
+            const mediaIds = await Promise.all( Files.map( file => twitterClient.v1.uploadMedia(file.path)  ))
+            await twitterClient.v1.tweet( text , { media_ids: mediaIds } )
+        }
+        else{
+            await twitterClient.v1.tweet( text )
+        }
+        
     } catch(err){
         console.log(err)
     }
+    
 }
-//tweet('test', ['https://media.nationalgeographic.org/assets/photos/000/263/26383.jpg'])
-//tweet('test tweet',[])
+
+//tweet('cute',['https://media.discordapp.net/attachments/944087799185952781/948737517841154068/glttt92xzhz51.jpg','https://styles.redditmedia.com/t5_3341a/styles/communityIcon_mp9wyjesmyp41.jpg'] )

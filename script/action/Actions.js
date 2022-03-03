@@ -1,10 +1,11 @@
-import 'dotenv/config' // ES6
+import 'dotenv/config'
 import { notion } from "../handlers/notion-handler.js";
 import { channel,newEmbed } from "../handlers/discord-handler.js";
 import { monday,mmdd } from '../extra/scheduler.js';
 import { CronJob } from 'cron'
 import { entitiesFilter } from "../handlers/wit-handler.js";
 import { tweet } from "../handlers/twitter-handler.js";
+
 
 export var TellMeABoutTodaysTask = async () =>{
     var pages = await notion.getPages( notion.databases["Worklog"] );
@@ -223,27 +224,29 @@ export var tweetThat = async ()=>{
                     messages.get(keys[1]).content : messages.get(keys[2]).content;
 
         var mediaURLs = messages.get(keys[1]).attachments.size ?
-                    messages.get(keys[1]).attachments :
+                        messages.get(keys[1]).attachments :
                         messages.get(keys[2]).attachments.size ?
-                        messages.get(keys[2]).attachments  : null ;
-
-        if(mediaURLs){
+                        messages.get(keys[2]).attachments  : new Map() ;
+         
+        if( mediaURLs.size > 0 ){
             mediaURLs = Array.from( mediaURLs.values() )
             mediaURLs = mediaURLs.map( media => media.attachment )
-        }
+        }      
 
         // 2. Create Message 
-        var tweetPreview = newEmbed( 
-            {title: "💬 Your Tweet " ,description : textBody })
-        tweetPreview.setImage(mediaURLs[0]);
-
+        
+        var tweetPreview = newEmbed({title: "💬 Your Tweet " ,description : textBody }) ;
+        if(mediaURLs){tweetPreview.setImage(mediaURLs[0])}
         channel.send({embeds : [tweetPreview] })
-         
-        // 3. ⬜ Add checking feature before posting
+        *
+        
+        // 3. ⬜ Add checking feature before posting "Like this?"
 
         
-        // 4. Post Tweet
-            tweet(text, mediaURLs)
+        // 3. Post Tweet
+        tweet( textBody, mediaURLs )
+
 
     })
 }
+

@@ -5,7 +5,6 @@ import { discord , channel } from './discord-handler.js'
 import { CronJob } from 'cron';
 import { ApplicationCommandPermissionType } from 'discord-api-types/v9';
 import { allisIn ,chunk } from '../extra/compare.js';
-import { CommandInteractionOptionResolver } from 'discord.js';
 
 var NOTION; var BLOCKS = [] ;
 class notionClient{

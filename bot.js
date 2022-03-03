@@ -4,7 +4,6 @@ import * as Action from './script/action/Actions.js'
 
 
 
-
 // Slash Command
 /*
 discord.on("interactionCreate", async interaction=>{

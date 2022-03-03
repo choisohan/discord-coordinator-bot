@@ -47,9 +47,9 @@ discord.once("ready", ()=>{
     (async () =>{
         try{
             await rest.put(Routes.applicationGuildCommands(clientId ,guildId ),{body:commands});
-            console.log("successfully registed commands.")
+            //console.log("successfully registed commands.")
         }catch(err){
-            console.log(" 🌀",err)
+            //console.log(" 🌀",err)
         }
     })()
     
