@@ -3,13 +3,15 @@ import * as Action from './Actions.js'
 
 var bot = {}; //this will reset whenever the script reinitiates
 
-export async function send(msg){
-    var mm = msg.content;
+export async function send(mm){
+    //var mm = msg.content;
     Wit.client.message(mm).then( async ( {entities, intents, traits} ) => { 
   
       var entities = Wit.entitiesFilter(entities); 
       var intents = Wit.intentFilter(intents); 
       var traits = Wit.traitFilter(traits); 
+
+      console.log( "🎈",entities )
   
   
       var findDB = await  Wit.findIntention( entities, intents, traits) ; 

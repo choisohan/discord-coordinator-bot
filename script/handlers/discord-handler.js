@@ -4,7 +4,7 @@ import { botIn } from "../action/Actions.js";
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { REST } from "@discordjs/rest";
 import { Routes } from 'discord-api-types/v9'
-
+import * as Chat from '../action/Chat.js'
 
 //export var discord = new Discord.Client({intents:["GUILDS","GUILD_MESSAGES"]});
 export var discord = new Discord.Client({intents:[
@@ -57,6 +57,10 @@ discord.once("ready", ()=>{
    // channel.send("I am in✨");
     // morningCheckUp(); 
     botIn(); 
+
+
+    //Test
+    Chat.send("what time is in korea?")
 
 })
 

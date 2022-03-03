@@ -19,13 +19,13 @@ discord.on("messageCreate", async msg=>{
     if(!msg.attachments.size){
       var mm = msg.content.toLowerCase();
       if ( mm == "clear"){Action.clearChannel();}
-      else {await Chat.send( msg );}
+      else {await Chat.send( msg.content );}
     }
 
     else{
       //if there's attachment
     }
-    
+
   }
 })
 

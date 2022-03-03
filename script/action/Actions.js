@@ -428,16 +428,16 @@ export async function TellMeAboutLocation(_entitie){
 
     if( "time" in _entitie ){
         var requestTime = new Date();
-        var localTime = moment.tz( requestTime , _entitie.location.timezone )
-        _newEmbed.setFields("Local Time", localTime.toString() )
+        var localTime = moment.tz( requestTime , _entitie.location.timezone ).format('LT');
+        _newEmbed.setFields({name : "Local Time", value : localTime} )
     }
     
     if("weather" in _entitie){
-        //getWeather(_newEmbed , location ); 
+        _newEmbed = await getWeather(_newEmbed , location ); 
     }
 
     // 2. Send
-    channel.send({embeds : [_newEmbed] })
-    
+    if(!_newEmbed.description &&  !_newEmbed.fields ){}
+    else{channel.send({embeds : [_newEmbed] })}
 
 }
