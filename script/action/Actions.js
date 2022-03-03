@@ -5,23 +5,10 @@ import { monday,mmdd } from '../extra/scheduler.js';
 import { CronJob } from 'cron'
 import { entitiesFilter } from "../handlers/wit-handler.js";
 import { tweet } from "../handlers/twitter-handler.js";
+import  weather from 'weather-js';
+import { MessageEmbed } from 'discord.js';
 
 
-export var TellMeABoutTodaysTask = async () =>{
-    var pages = await notion.getPages( notion.databases["Worklog"] );
-    var columns = await notion.getColumns( pages[0].id );
-    console.log( "columns.length : ", columns.length)
-    var today = new Date().getDay() ; 
-    today = today == 0 ? 6: today - 1; 
-    console.log( "today : ", today)
-    var TodaysColumn = columns[today]; 
-    console.log( "TodaysColumn : ", TodaysColumn)
-    var blocks = await notion.getChildren( TodaysColumn.id, {type:'to_do'} );
-    var text = await notion.blocks_to_text(blocks); 
-
-    var _newEmbed = newEmbed( {title: "🌈 " + new Date().toDateString() ,field :{name : "Things to do"  ,value : text } } )
-    channel.send({embeds : [_newEmbed] })
-}
 
 
 
@@ -101,16 +88,22 @@ var getCalendar = (wit_datetime ) =>{
 }
 
 export async function reminderInit(){
+    console.log("reminder init")
     var reminders = await notion.getPages( notion.databases["Reminders"] );
 
     //console.log( reminders[0].properties['Cron Time'].formula.string);
-    reminders.forEach( reminder => {
-        var cronTime = reminder.properties['Cron Time'].formula.string;
-        var name = reminder.properties['Name'].title[0].plain_text 
+    reminders.forEach(  reminder => {
+        var P = reminder.properties; 
+        var cronTime = P['Cron Time'].formula.string;
+        var name = P['Name'].title[0].plain_text 
+        var messages = P['Messages'].rich_text.length > 0 ? (P['Messages'].rich_text[0].plain_text).split(',') : [] ; 
+        var script = P['Script'].rich_text.length > 0 ? P['Script'].rich_text[0].plain_text  : null ;  
         
-        var job =new CronJob( cronTime , ()=>{ sendAlarm(name );                    
-        }, null, null , process.env.TIMEZONE);
-        job.start()
+        new CronJob( cronTime , ()=>{
+            if( messages.length > 0 ){sendAlarm( messages[Math.floor( messages.length*Math.random() )] )}
+            else{ sendAlarm( "it's time for "+ name +" ✨");}
+            if(script){eval(script);}     
+        }, null, null , process.env.TIMEZONE).start();
     })
 
 }
@@ -199,7 +192,8 @@ export function testRun(){
 
 
 
-var sendAlarm = ( message ) =>{channel.send("⏰ Time for " + message  +"!" );}
+var sendAlarm = ( message ) =>{channel.send("⏰"+ message );}
+
 var lineChange = `
 `
 
@@ -250,3 +244,63 @@ export var tweetThat = async ()=>{
     })
 }
 
+export function getWeather( _embeded , _city ){
+    return new Promise(async (resolve,error)=>{
+        weather.find({search: _city, degreeType: 'F'}, function(err, result) {
+            var data = result[0];
+            _embeded
+                //.setAuthor({name: "Weather forecast" , value : data.current.imageUrl})
+                .setThumbnail(data.current.imageUrl)
+                //.addField("City", data.location.name, true)
+                .addField("Sky Condition", data.current.skytext, true)
+                .addField("Temperature", data.current.temperature, true)
+                //.addField("Wind Speed", data.current.windspeed, true)
+               // .addField("Timezone", data.location.timezone, true)
+                .addField("Day", data.current.day, true)
+                resolve(_embeded)
+          });      
+    })
+}
+
+
+export var TellMeABoutTodaysTask = async () =>{
+    var pages = await notion.getPages( notion.databases["Worklog"] );
+    var columns = await notion.getColumns( pages[0] );
+    var today = new Date().getDay() ; 
+    today = today == 0 ? 6: today - 1; 
+    var TodaysColumn = columns[today]; 
+    var blocks = await notion.getChildren( TodaysColumn, {type:'to_do'} );
+    var text = await notion.blocks_to_text(blocks); 
+
+    var _newEmbed = newEmbed( {title: "🌈 " + new Date().toDateString() ,field :{name : "Things to do"  ,value : text } } )
+    channel.send({embeds : [_newEmbed] })
+}
+
+
+
+export async function morningCheckUp(){
+    var _embeded = new MessageEmbed().setTitle(` ♥ Let's start Today `)
+
+    // 0. weather
+    await getWeather( _embeded , 'Vancouver, BC');
+
+    // 1. todo 
+    var pages = await notion.getPages( notion.databases["Worklog"] );
+    var columns = await notion.getColumns( pages[0] );
+    var today = new Date().getDay() ;
+    today = today == 0 ? 6: today - 1; 
+    var TodaysColumn = columns[today]; 
+    var blocks = await notion.getChildren( TodaysColumn, {type:'to_do'} );
+    var text = await notion.blocks_to_text(blocks);     
+    _embeded.addFields({name : "Tasks", value : text})
+
+    // 9. send
+    channel.send({embeds : [_embeded] }) 
+    
+}
+
+export async function init(){
+    //reminder
+    reminderInit(); 
+
+}

@@ -1,9 +1,9 @@
 import Discord, { Client, Intents, Collection } from "discord.js";
 import 'dotenv/config' 
-import { reminderInit , testRun } from "../action/Actions.js";
+import { init, morningCheckUp } from "../action/Actions.js";
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { REST } from "@discordjs/rest";
-import { EmbedType, Routes } from 'discord-api-types/v9'
+import { Routes } from 'discord-api-types/v9'
 
 
 //export var discord = new Discord.Client({intents:["GUILDS","GUILD_MESSAGES"]});
@@ -55,11 +55,8 @@ discord.once("ready", ()=>{
     
     channel = discord.channels.cache.find(c => c.name === "general")
    // channel.send("I am in✨");
-    reminderInit(); 
-    testRun();
-    //CreateNewLog(); //temp
-    //spreadTodo()
-    
+    // morningCheckUp(); 
+    init(); 
 
 })
 
@@ -74,7 +71,6 @@ export const newEmbed = (_embeded) =>{
     if("field" in _embeded){ Embed.addFields(_embeded.field)}
     if("thumbnail" in _embeded){ Embed.setThumbnail(_embeded.thumbnail) }
     if("image" in _embeded){ Embed.setImage(_embeded.thumbnail) }
-
 
     return Embed;
 
