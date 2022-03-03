@@ -6,8 +6,7 @@ import { CronJob } from 'cron'
 import { tweet } from "../handlers/twitter-handler.js";
 import  weather from 'weather-js';
 import { MessageEmbed } from 'discord.js';
-
-
+import moment from 'moment';
 
 /*
 export var MoveTodaysLeftTask = async()=>{
@@ -384,7 +383,7 @@ export async function botIn(){
     var reminders = await notion.getPages( notion.databases["Reminders"] );
     reminders = await reminders.filter( data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    )
     //initCrons(reminders); 
-
+    //TellMeAboutLocation()
     //test
     /*
     TellMeAboutTasks({
@@ -419,3 +418,26 @@ export async function userOut(){
     allCrons = []; 
 }
 
+export async function TellMeAboutLocation(_entitie){
+    var location = "location" in _entitie ? _entitie.location.name : "Vancouver"
+
+    
+    // 1. Create Embed
+    var _newEmbed = new MessageEmbed();
+    _newEmbed.setTitle( "🗺️ " + location );
+
+    if( "time" in _entitie ){
+        var requestTime = new Date();
+        var localTime = moment.tz( requestTime , _entitie.location.timezone )
+        _newEmbed.setFields("Local Time", localTime.toString() )
+    }
+    
+    if("weather" in _entitie){
+        //getWeather(_newEmbed , location ); 
+    }
+
+    // 2. Send
+    channel.send({embeds : [_newEmbed] })
+    
+
+}

@@ -50,6 +50,10 @@
   {
     "entities" :["bye"], "intents" : ["greeting"] , "traits" :{} ,
     "script": ["Action.userOut()"]
+  },
+  {
+    "entities" :[], "intents" : ["request_location"] , "traits" :{} ,
+    "script": ["Action.TellMeAboutLocation(bot.entities)"]
   }
 
  

@@ -21,8 +21,11 @@ export const entitiesFilter = ( _entities ) =>{
                     duration[unit] = _entities[key][0][unit]
                 }
             })
-            //console.log( duration)
             entities[_entities[key][0].role]=  duration ; //_entities[key][0].normalized.value
+        }
+        else if(_entities[key][0].role  == 'location' ){
+            entities[_entities[key][0].role] =  _entities[key][0].resolved.values[0]
+            console.log( entities[_entities[key][0].role] )
         }
         else{
             entities[_entities[key][0].role]=  _entities[key][0].value

@@ -34,7 +34,7 @@ commands.forEach(command =>{
 
 
 discord.once("ready", ()=>{
-    //console.log("bot is logged in ")
+    console.log("bot is logged in ")
 
     var clientId = discord.user.id;//'945038953478754374'
     var guildId = '944087799185952778'
