@@ -41,7 +41,7 @@ discord.on("messageCreate", async msg=>{
 var bot = {}; //this will reset whenever the script reinitiates
 async function talk(msg){
   var mm = msg.content;
-  witClient.message(mm).then( async ( {entities, intents, traits} ) => {// 
+  witClient.message(mm).then( async ( {entities, intents, traits} ) => { 
     var findDB = await  findIntention(entities, intents, traits) ; 
     if(findDB){
       bot.entities = entities;bot.intents=  intents;bot.traits=  traits;
@@ -79,7 +79,7 @@ async function talk(msg){
       }
     }
     else{
-      channel.send("What do you mean?")
+      channel.send("?")
     }
       
      // console.log("🍎🍎🍎🍎🍎🍎🍎🍎🍎")

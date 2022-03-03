@@ -87,24 +87,26 @@ var getCalendar = (wit_datetime ) =>{
     })[0];
 }
 
-export async function reminderInit(){
-    console.log("reminder init")
-    var reminders = await notion.getPages( notion.databases["Reminders"] );
+var allCrons =[];
+export async function initCrons( pages ){
 
-    //console.log( reminders[0].properties['Cron Time'].formula.string);
-    reminders.forEach(  reminder => {
+    pages.forEach(  reminder => {
         var P = reminder.properties; 
         var cronTime = P['Cron Time'].formula.string;
         var name = P['Name'].title[0].plain_text 
         var messages = P['Messages'].rich_text.length > 0 ? (P['Messages'].rich_text[0].plain_text).split(',') : [] ; 
         var script = P['Script'].rich_text.length > 0 ? P['Script'].rich_text[0].plain_text  : null ;  
         
-        new CronJob( cronTime , ()=>{
+        var cron = new CronJob( cronTime , ()=>{
             if( messages.length > 0 ){sendAlarm( messages[Math.floor( messages.length*Math.random() )] )}
             else{ sendAlarm( "it's time for "+ name +" ✨");}
             if(script){eval(script);}     
-        }, null, null , process.env.TIMEZONE).start();
+        }, null, null , process.env.TIMEZONE);
+        allCrons.push(cron);
+        cron.start(); 
+       
     })
+    
 
 }
 
@@ -263,7 +265,7 @@ export function getWeather( _embeded , _city ){
 }
 
 
-export var TellMeABoutTodaysTask = async () =>{
+export var TellMeABoutTasks = async (_entitie) =>{
     var pages = await notion.getPages( notion.databases["Worklog"] );
     var columns = await notion.getColumns( pages[0] );
     var today = new Date().getDay() ; 
@@ -279,7 +281,7 @@ var notionDateToDate = (stringDate) =>{
     var Cal = stringDate.split("-").map(i => parseInt(i) )
     return new Date(Cal[0], Cal[1]-1, Cal[2]); // ⬜ month number seems larger...
 }
-export var TellMeAboutProject = async ()=>{
+export var TellMeAboutProject = async (_entitie)=>{
 
     var pages = await notion.getPages( notion.databases["Projects"] );
     var Now = new Date(); 
@@ -304,9 +306,10 @@ export var TellMeAboutProject = async ()=>{
         leftDays = leftDays < 2 ? leftDays.toString() +" day" :leftDays.toString() +" days"
         
         var _embeded = new MessageEmbed()
-                                .setTitle("🏞️" + title )
+                                .description(`[ 🏞️ ${title} ](${pages[0].url})`)
                                 .addFields({name :'Due' , value : end, inline : true })
                                 .addFields({name :'Left' , value : leftDays, inline : true })
+
                     
        channel.send({embeds : [_embeded] }) 
                 
@@ -343,8 +346,33 @@ export async function morningCheckUp(){
     
 }
 
-export async function init(){
-    //reminder
-    //reminderInit(); 
 
+export async function botIn(){
+    console.log("Bot is in")
+    // When a bot initiate, all the reminder except daily event starts.
+    var reminders = await notion.getPages( notion.databases["Reminders"] );
+    reminders = await reminders.filter( data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    )
+    initCrons(reminders); 
+    
 }
+export async function userIn(){
+    console.log("You are in!")
+    var messages = ['Hello!','You came back!',"Hey Darling!"];  
+    channel.send( messages[Math.floor( Math.random() * messages.length )]);
+
+    var reminders = await notion.getPages( notion.databases["Reminders"] );
+    reminders = reminders.filter( data => data.properties.Unit.select == null || ['minute','hour','day'].includes(data.properties.Unit.select.name)    )
+    initCrons(reminders); 
+}
+
+
+
+export async function userOut(){
+    console.log("You are out!")
+    var messages = ["Bye! Have a good day!" ,"See ya!"]
+    channel.send( messages[Math.floor( Math.random() * messages.length )]);
+
+    allCrons.forEach( item => { item.stop();} )
+    allCrons = []; 
+}
+

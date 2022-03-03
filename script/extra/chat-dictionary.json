@@ -4,15 +4,15 @@
 [
 
   {
-      "entities" :["what","tasks"], "intents" : ["request"] , "traits" :{},
-      "script" : ["Action.TellMeABoutTodaysTask()"] 
+      "entities" :["what","tasks"], "intents" : ["request_notion_read"] , "traits" :{},
+      "script" : ["Action.TellMeABoutTasks(bot.entities)"] 
   },
   {
-    "entities" :["what","project"], "intents" : ["request"] , "traits" :{},
-    "script" : ["Action.TellMeAboutProject()"] 
+    "entities" :["what","project"], "intents" : ["request_notion_read"] , "traits" :{},
+    "script" : ["Action.TellMeAboutProject(bot.entities)"] 
   },
   {
-      "entities" :["create" ,"log"] , "intents" : ["request"] , "traits" :{} ,
+      "entities" :["create" ,"log"] , "intents" : ["request_notion_create"] , "traits" :{} ,
       "script" : ["Action.CreateNewLog()"]  
   },
   {
@@ -28,22 +28,29 @@
     "message" : ["No problem" ,"No worries"]
   },
   {
-    "entities" :["remind","datetime"], "intents" : ["request"] , "traits" :{} ,
+    "entities" :["remind","datetime"], "intents" : ["request_notion_create"] , "traits" :{} ,
     "script" : ["Action.createReminder(bot.entities )"] , "alert" :"Do you want me to remind you that time?"
   },
   {
-    "entities" :["twitter"], "intents" : ["request"] , "traits" :{} ,
+    "entities" :["twitter"], "intents" : ["request_share"] , "traits" :{} ,
       "script": ["Action.tweetThat()"]
   },
   {
-    "entities" :["what","remind"], "intents" : ["request"] , "traits" :{} ,
+    "entities" :["what","remind"], "intents" : ["request_notion_read"] , "traits" :{} ,
       "script": ["bot.datas = Action.tellMeAboutReminders()"]
   },
   {
-    "entities" :["delete","number"], "intents" : ["request"] , "traits" :{} ,
-    "script": [" Promise.resolve( bot.datas ).then( datas => Action.deleteSelected( datas , bot.entities )); "]
+    "entities" :["delete","number"], "intents" : ["request_notion_delete"] , "traits" :{} ,
+    "script": ["Promise.resolve( bot.datas ).then( datas => Action.deleteSelected( datas , bot.entities )); "]
+  },
+  {
+    "entities" :["hi"], "intents" : ["greeting"] , "traits" :{} ,
+    "script": ["Action.userIn()"]
+  },
+  {
+    "entities" :["bye"], "intents" : ["greeting"] , "traits" :{} ,
+    "script": ["Action.userOut()"]
   }
- 
 
  
 ]

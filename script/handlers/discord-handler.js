@@ -1,6 +1,6 @@
 import Discord, { Client, Intents, Collection } from "discord.js";
 import 'dotenv/config' 
-import { init, morningCheckUp } from "../action/Actions.js";
+import { botIn } from "../action/Actions.js";
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { REST } from "@discordjs/rest";
 import { Routes } from 'discord-api-types/v9'
@@ -34,7 +34,7 @@ commands.forEach(command =>{
 
 
 discord.once("ready", ()=>{
-    console.log("bot is logged in ")
+    //console.log("bot is logged in ")
 
     var clientId = discord.user.id;//'945038953478754374'
     var guildId = '944087799185952778'
@@ -56,7 +56,7 @@ discord.once("ready", ()=>{
     channel = discord.channels.cache.find(c => c.name === "general")
    // channel.send("I am in✨");
     // morningCheckUp(); 
-    init(); 
+    botIn(); 
 
 })
 
