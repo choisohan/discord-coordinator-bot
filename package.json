@@ -22,6 +22,7 @@
     "mongoose": "^6.2.3",
     "node-wit": "^6.0.1",
     "nodemon": "^2.0.15",
+    "puppeteer": "^13.4.1",
     "twitter-api-v2": "^1.11.0"
   }
 }
