@@ -390,7 +390,24 @@ Do anything you like!❤`)
 
 
 
-export async function morningCheckUp(){
+
+
+export async function botIn(){
+    // When a bot initiate, all the reminder except daily event starts.
+    var reminders = await notion.getPages( notion.databases["Reminders"] );
+    reminders = await reminders.filter( data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    )
+    //initCrons(reminders);     
+}
+export async function userIn(){
+    console.log("You are in!")
+    var messages = ['Hello!','You came back!',"Hey Darling!"];  
+    channel.send( messages[Math.floor( Math.random() * messages.length )]);
+
+    var reminders = await notion.getPages( notion.databases["Reminders"] );
+    reminders = reminders.filter( data => data.properties.Unit.select == null || ['minute','hour','day'].includes(data.properties.Unit.select.name)    )
+    initCrons(reminders); 
+
+    //
     var _embeded = new MessageEmbed().setTitle(` ♥ Let's start Today `)
 
     // 0. weather
@@ -430,23 +447,6 @@ Do you want me to move some tasks to tmr?`];
         }
     }
 }
-
-export async function botIn(){
-    // When a bot initiate, all the reminder except daily event starts.
-    var reminders = await notion.getPages( notion.databases["Reminders"] );
-    reminders = await reminders.filter( data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    )
-    //initCrons(reminders);     
-}
-export async function userIn(){
-    console.log("You are in!")
-    var messages = ['Hello!','You came back!',"Hey Darling!"];  
-    channel.send( messages[Math.floor( Math.random() * messages.length )]);
-
-    var reminders = await notion.getPages( notion.databases["Reminders"] );
-    reminders = reminders.filter( data => data.properties.Unit.select == null || ['minute','hour','day'].includes(data.properties.Unit.select.name)    )
-    initCrons(reminders); 
-}
-
 
 
 export async function userOut(){

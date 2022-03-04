@@ -26,6 +26,7 @@
     "nodemon": "^2.0.15",
     "puppeteer": "^13.4.1",
     "twitter-api-v2": "^1.11.0",
-    "weather-js": "^2.0.0"
+    "weather-js": "^2.0.0",
+    "xhr2": "^0.2.1"
   }
 }

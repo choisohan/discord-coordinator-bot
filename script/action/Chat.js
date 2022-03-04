@@ -1,8 +1,9 @@
-import 'dotenv/config' 
 import * as Wit from '../handlers/wit-handler.js'
 import * as Action from './Actions.js'
 import { channel } from '../handlers/discord-handler.js';
+import * as Search from '../handlers/search-handler.js'
 var bot = {}; //this will reset whenever the script reinitiates
+
 
 export async function send( mm ){
     if(mm == 'clear'){Action.clearChannel()}
@@ -26,7 +27,7 @@ export async function send( mm ){
         // JUST CHAT
         var keywords = Object.keys(entities);
         keywords = keywords[ Math.floor(keywords.length * Math.random()) ]
-        var gif = await getGIF( keywords );
+        var gif = await Search.getGIF( keywords );
         channel.send(gif);
 
       }
@@ -45,17 +46,3 @@ export async function emojiReaction( _emoji ){
         Action.respondNo(); 
     }
 }
-
-async function getGIF(search_term){
-    return new Promise(async (resolve, err)=>{
-        var url = `http://api.giphy.com/v1/gifs/search?q=${search_term}&api_key=${process.env.GIPHY_KEY}&limit=5`
-        fetch(url)
-        .then( response =>response.json())
-        .then(content => {
-            var imgURL = content.data[0].images.downsized.url;
-            resolve(imgURL)
-        })
-    })
-
-}
-
