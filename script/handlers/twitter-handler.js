@@ -2,7 +2,6 @@ import 'dotenv/config'
 import { TwitterApi } from 'twitter-api-v2';
 import axios from 'axios';
 import * as fs from 'fs'
-import { resolve } from 'path';
 
 export var client = new TwitterApi({
     appKey: process.env.TWITTER_API,
@@ -30,7 +29,6 @@ function writeToFile( _URL ){
         var stream = fs.createWriteStream('tempFolder/tmp_' + _URL.split('/').at(-1)) ;
         response.data.pipe(stream);
         stream.on("finish",()=>{
-            console.log("🍊")
             resolve(stream)
         })
     })
@@ -53,5 +51,3 @@ export const tweet = async (text , urls ) => {
     }
     
 }
-
-//tweet('cute',['https://media.discordapp.net/attachments/944087799185952781/948737517841154068/glttt92xzhz51.jpg','https://styles.redditmedia.com/t5_3341a/styles/communityIcon_mp9wyjesmyp41.jpg'] )

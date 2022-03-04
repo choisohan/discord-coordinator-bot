@@ -57,7 +57,7 @@ discord.once("ready", ()=>{
    // channel.send("I am in✨");
     botIn(); 
 
-    //Chat.send("what is todays todo?")
+   // Chat.send("I am so excited!")
 
 
     //Test
