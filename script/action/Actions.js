@@ -7,7 +7,7 @@ import { tweet } from "../handlers/twitter-handler.js";
 import  weather from 'weather-js';
 import { MessageEmbed } from 'discord.js';
 import moment from 'moment';
-
+var stored = []; 
 /*
 export var MoveTodaysLeftTask = async()=>{
     var pages = await notion.getPages( notion.databases["Worklog"] );
@@ -25,7 +25,10 @@ export var MoveTodaysLeftTask = async()=>{
     channel.send(text)
 }
 */ 
+
+
 var getNotionDate = _date=>{ return _date.toISOString().split('T')[0] }
+
 export var CreateNewLog = async () =>{
 
     var BUILD = async ( _container ) =>{
@@ -40,15 +43,20 @@ export var CreateNewLog = async () =>{
 
     var style = { Name : mmdd(monday) }
     style.Date = {start :getNotionDate(monday)  }
+
+    channel.send("Do you want me to create new 📒log?")
     
-    var newPage =  await notion.createNew( notion.databases["Worklog"] , style ,BUILD ); 
-    if( newPage.children.length > 0 ){await notion.spreadItem( newPage , 7 );}
-    
-    channel.send(`Here it is!`) 
-    var _newEmbed = newEmbed( {description :` [📒${mmdd(monday)}](${newPage.url}) `} )
-    channel.send({embeds : [_newEmbed] })
-    
-    
+    stored.action = async() =>{
+        var newPage =  await notion.createNew( notion.databases["Worklog"] , style ,BUILD ); 
+        /*
+        if( newPage.children.length > 0 ){
+            await notion.spreadItem( newPage , 7 );
+        }
+        */ 
+        channel.send(`Here it is!`) 
+        var _newEmbed = newEmbed( {description :` [📒${mmdd(monday)}](${newPage.url}) `} )
+        channel.send({embeds : [_newEmbed] })
+    }
 }
 
 export async function clearChannel(){
@@ -95,29 +103,60 @@ export async function initCrons( pages ){
 
 }
 
-export async function createReminder( entitie){
+export async function respondYes( ){
+    if(stored.action){
+        stored.action(); 
+        stored = {}
+    }
+}
+export async function respondNo( ){
+    if(stored.action){
+        stored = {}
+        channel.send("No problem!👍")
+    }
+}
+
+export async function createReminder(entitie){
+    console.log( entitie )
     // 0. sort
     var _agenda = entitie.agenda_entry ? entitie.agenda_entry : "something" ;
-    var style = { Name : _agenda }
+    var style = { Name : _agenda };
     if('duration' in entitie){
         //it's recurring task
         style.Unit = Object.keys(entitie.duration)[0] ;
         style.Recurring = Object.values(entitie.duration)[0] ;
     }
-    else{
+    if('datetime' in entitie ){
         //it's one time event
         var CAL = getCalendar(entitie.datetime);
         style.Date = {start : CAL.year +"-" + CAL.month +"-"+CAL.day , end: null }
     }
-    
-    // 1. add notion
-    var page = await notion.createNew( notion.databases["Reminders"] , style ,null ); 
-    var cronTime = page.properties['Cron Time'].formula.string ;
-    
-    // 2. set Cron
-    new CronJob( cronTime ,
-        ()=>{ sendAlarm( _agenda );},
-        null, null , process.env.TIMEZONE).start();
+
+    // 1. check up message
+    var _newEmbed = new MessageEmbed();
+    _newEmbed.setTitle("⏰ Reminder");
+    Object.keys(style).forEach( k=>{
+        _newEmbed.addFields({name : k , value :style[k].toString(),inline:true})
+    })
+    channel.send({embeds : [_newEmbed] })
+    channel.send("Want me to create like this?")
+
+
+    stored.action = async() =>{
+        
+        // 1. add notion
+        var page = await notion.createNew( notion.databases["Reminders"] , style ,null ); 
+        var cronTime = await page.properties['Cron Time'].formula.string ;
+   
+        // 2. set Cron
+        var newCron = new CronJob(cronTime ,()=>{ sendAlarm( _agenda ) },null, null , process.env.TIMEZONE);
+        allCrons.push(newCron);
+        newCron.start();
+
+        channel.send("I added a new reminder for you!")
+            
+    }
+
 
 }
 
@@ -133,9 +172,8 @@ export var tellMeAboutReminders = async () =>{
                         id: item.id
                     }
             } )
+    stored.datas = reminders; 
     // 2. Create Message 
-
-    console.log("🍓",reminders )
     
     var _embed = newEmbed({title: "⏰ All Reminders"})
                  
@@ -145,50 +183,46 @@ export var tellMeAboutReminders = async () =>{
     }
 
     channel.send({embeds : [_embed] })  
+
+    stored.datas = reminders; 
     return reminders;
 }
 
 
-export var deleteSelected = async ( _dataDict, _entities ) =>{
+export var deleteSelected = async ( _entities ) =>{
 
-    var message = ""
-    if( !_dataDict ){message = "hmmm.... delete from where? 😗❔ "}
+    if( !stored.datas ){
+        channel.send("hmmm.... delete from where? 😗❔ ")
+    }
 
     else{
-
-        var numbers = _entities['number']
-        numbers = numbers.map( numb => numb.value )
-        for (var i = 0; i < numbers.length ; i ++  ){
-            //console.log( "🎗  "+ numb.id  )
-            var ID = numbers[i]
-            ID= _dataDict[ID].id 
-            await notion.deleteItem(  ID  )
+        channel.send("I can delete if you want!")
+        stored.action = async () =>{
+            var numbers = _entities['number']
+            numbers = numbers.map( numb => numb.value )
+            for (var i = 0; i < numbers.length ; i ++  ){
+                var ID = numbers[i]
+                ID= stored.datas[ID].id 
+                await notion.deleteItem(  ID  )
+            }
+            channel.send( 'Mission Complete! I deleted ' + numbers.length + "  items 🙌" ) 
         }
 
-        message = 'Mission Complete! I deleted ' + numbers.length + "  items 🙌"
     }
-    channel.send(message)
-    
     
 }
-
-export function testRun(){
-}
-
-
-
 
 var sendAlarm = ( message ) =>{channel.send("⏰"+ message );}
 
 var lineChange = `
 `
 
+/*
 export var spreadTodo = async ()=>{
     var pages = await notion.getPages( notion.databases["Worklog"] );
     var latest = pages[0];
     notion.spreadItem(latest , 7 ); 
-
-}
+}*/ 
 
 export var tweetThat = async ()=>{
 
@@ -218,30 +252,25 @@ export var tweetThat = async ()=>{
         var tweetPreview = newEmbed({title: "💬 Your Tweet " ,description : textBody }) ;
         if(mediaURLs){tweetPreview.setImage(mediaURLs[0])}
         channel.send({embeds : [tweetPreview] })
-        *
         
-        // 3. ⬜ Add checking feature before posting "Like this?"
 
-        
         // 3. Post Tweet
-        tweet( textBody, mediaURLs )
-
+        stored.action = () =>{
+            tweet( textBody, mediaURLs )
+        }
 
     })
 }
 
+//https://github.com/devfacet/weather
 export function getWeather( _embeded , _city ){
     return new Promise(async (resolve,error)=>{
         weather.find({search: _city, degreeType: 'F'}, function(err, result) {
             var data = result[0];
             _embeded
-                //.setAuthor({name: "Weather forecast" , value : data.current.imageUrl})
                 .setThumbnail(data.current.imageUrl)
-                //.addField("City", data.location.name, true)
                 .addField("Sky Condition", data.current.skytext, true)
                 .addField("Temperature", data.current.temperature, true)
-                //.addField("Wind Speed", data.current.windspeed, true)
-               // .addField("Timezone", data.location.timezone, true)
                 .addField("Day", data.current.day, true)
                 resolve(_embeded)
           });      
@@ -256,29 +285,37 @@ export var TellMeAboutTasks = async (_entitie) =>{
     var date = 'datetime' in _entitie ? witTimeToDate(_entitie.datetime) : new Date()
     var day =  date.getDay();
     day = day == 0 ? 6: day - 1;  //start of the week is monday
-
-
     var pages = await notion.getPages( notion.databases["Worklog"] );
-    var columns = await notion.getColumns( pages[0] );
-    var TodaysColumn = columns[day]; 
-    var allTodo = await notion.getChildren( TodaysColumn, {type:'to_do'} );
-    allTodo = allTodo.filter(b => b.to_do )
-    var leftTodo = allTodo.filter( b => !b.to_do.checked );
+    var columns = await notion.getColumns( pages[0] ) ; 
 
-    var text = "" ; 
-    var _newEmbed = new MessageEmbed();
-    _newEmbed.setTitle (  "🌈 " + date.toDateString()  ); 
-    if("how_many" in _entitie){
-        text = "You have  " + leftTodo.length.toString() +"/" + allTodo.length.toString() +" tasks" ;
-        _newEmbed.setDescription( text ); 
-    }
-    else{
-        text = !"remain" in _entitie ? await notion.blocks_to_text(allTodo) : await notion.blocks_to_text(leftTodo)
-        _newEmbed.setDescription( text ); 
-    }
-    channel.send({embeds : [_newEmbed] })
+    Promise.resolve( getTasks(day,columns ) ).then( async ([allTodo, leftTodo] )=>{
+        var text = "" ; 
+        var _newEmbed = new MessageEmbed();
+        _newEmbed.setTitle (  "🌈 " + date.toDateString()  ); 
+        if("how_many" in _entitie){
+            text = "You have  " + leftTodo.length.toString() +"/" + allTodo.length.toString() +" tasks" ;
+            _newEmbed.setDescription( text ); 
+        }
+        else{
+            stored.datas = await !"remain" in _entitie ? allTodo : leftTodo ;
+            text = await notion.blocks_to_text( stored.datas );
+            _newEmbed.setDescription( text ); 
+        }
+        channel.send({embeds : [_newEmbed] })
+        var nextColumn = columns[Math.min(day + 1, columns.length)]
+        askBusy( 10 ,leftTodo , nextColumn ); 
+    })
+
 }
 
+var getTasks = async( day , columns ) =>{
+    //var columns = await notion.getColumns( page );
+    var TodaysColumn = columns[day]; 
+    var allTodo = await notion.getChildren( TodaysColumn, {type:'to_do'} );
+    allTodo = await allTodo.filter(b => b.to_do )
+    var leftTodo = await allTodo.filter( b => !b.to_do.checked );
+    return [allTodo, leftTodo]; 
+}
 
 
 
@@ -295,20 +332,6 @@ export var TellMeAboutProject = async (_entitie)=>{
     var Scheduled = AllProjects.filter( p => p.properties.Date.date != null && p.properties.Date.date.end != null )
     var Completed = Scheduled.filter( p => Now.getTime() >= notionDateToDate(p.properties.Date.date.end).getTime() )
     var Incompleted = Scheduled.filter( p => !Completed.includes(p));
-    /*
-        {
-        var P = p.properties ;
-        if(P.Date.date) {
-            
-            if(P.Date.date) {
-               // var start = notionDateToDate ( P.Date.date.start ) ;
-                //var end =  P.Date.date.end != null ? notionDateToDate( P.Date.date.end ) : null ; 
-                //return Now.getTime() <= end.getTime() && Now.getTime() >= start.getTime()
-
-            }
-            
-        }
-    })*/ 
 
     var Project ; 
     if ('next' in _entitie ){
@@ -321,7 +344,6 @@ export var TellMeAboutProject = async (_entitie)=>{
         Project = Incompleted[0] 
     }
 
-    
     if( Project ){
         //found
         var title = Project.properties.Name.title[0].plain_text; 
@@ -332,16 +354,29 @@ export var TellMeAboutProject = async (_entitie)=>{
         
         var _embeded = new MessageEmbed()
         _embeded.setDescription(`[ 🏞️ **${title}** ](${Project.url})`)
+        var text =[]
+        
         if('next' in _entitie){
-            //_embeded.addFields({name :'Start' , value : start, inline : true })
+            const startIn = moment(start).endOf('day').fromNow();
+            text.push("◽ Start in " + startIn)
         }
         else if ( 'previous' in _entitie ){
-            _embeded.addFields({name :'Start' , value : start, inline : true })
-            _embeded.addFields({name :'Due' , value : end, inline : true })
+            text.push("◽ Started " + start )
+            text.push("◽ Due is " + end )
         }
         else{
-            _embeded.addFields({name :'Left' , value : leftDays, inline : true })
+            text.push("◽ Due is " + leftDays + lineChange)
+
+            //_embeded.addFields({name :'⭐Left' , value : leftDays, inline : true })
         }
+
+       var Text = ''
+       for(var i = 0; i < text.length; i++){
+            Text += text[i];
+           if( i != text.length ){    Text+= lineChange; }
+       }
+
+        _embeded.addFields({name :'Information' , value : Text })
        channel.send({embeds : [_embeded] }) 
     }
     else{
@@ -362,40 +397,45 @@ export async function morningCheckUp(){
     await getWeather( _embeded , 'Vancouver, BC');
 
     // 1. todo 
+    var day = new Date().getDay()
+    day = day == 0 ? 6: day - 1; 
     var pages = await notion.getPages( notion.databases["Worklog"] );
-    var columns = await notion.getColumns( pages[0] );
-    var today = new Date().getDay() ;
-    today = today == 0 ? 6: today - 1; 
-    var TodaysColumn = columns[today]; 
-    var blocks = await notion.getChildren( TodaysColumn, {type:'to_do'} );
-    var text = await notion.blocks_to_text(blocks);     
-    _embeded.addFields({name : "Tasks", value : text})
 
-    // 9. send
-    channel.send({embeds : [_embeded] }) 
+    var columns = await notion.getColumns( pages[0] ) ; 
+    Promise.resolve( getTasks(day, columns ) ).then( async ( [ allTodo , leftTodo ] ) =>{
+
+        var todos = await notion.blocks_to_text(allTodo);     
+        _embeded.addFields({name : "Tasks", value : todos})
+        _embeded.addFields({name : "Count", value : `${allTodo.length-leftTodo.length}/${allTodo.length}`})
     
+        // 9. send
+        channel.send({embeds : [_embeded] }) 
+    
+        // 9. if task is too many
+        var nextColumn = columns[Math.min(day + 1, columns.length)]
+        askBusy(10, leftTodo , nextColumn ); 
+    })    
 }
 
+async function askBusy( _maxCount , tasks , moveGoal ){
+    if( tasks.length > _maxCount ){
+        const messages = [`😲You are too busy today!
+Do you want me to move some tasks to tmr?`];
+        var leftArr = tasks.slice(_maxCount) ;
+        channel.send( messages[Math.floor( messages.length * Math.random() )] )
+        stored.action = async() =>{
+            leftArr.forEach(async task =>{
+                await notion.parent( task, moveGoal )
+            })
+        }
+    }
+}
 
 export async function botIn(){
-    console.log("Bot is in")
     // When a bot initiate, all the reminder except daily event starts.
     var reminders = await notion.getPages( notion.databases["Reminders"] );
     reminders = await reminders.filter( data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    )
-    //initCrons(reminders); 
-    //TellMeAboutLocation()
-    //test
-    /*
-    TellMeAboutTasks({
-        datetime: '2022-03-03T00:00:00.000-08:00',
-        task: 'thing to do',
-        remain: 'left',
-        what: 'what'
-      }); 
-      */ 
-//next: 'next', 
-    //TellMeAboutProject({ project: 'project', what: 'what' }    );
-    
+    //initCrons(reminders);     
 }
 export async function userIn(){
     console.log("You are in!")
@@ -420,7 +460,6 @@ export async function userOut(){
 
 export async function TellMeAboutLocation(_entitie){
     var location = "location" in _entitie ? _entitie.location.name : "Vancouver"
-
     
     // 1. Create Embed
     var _newEmbed = new MessageEmbed();

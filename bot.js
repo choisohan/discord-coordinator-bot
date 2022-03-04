@@ -3,30 +3,31 @@ import * as Chat from './script/action/Chat.js'
 
 
 // Slash Command
-/*
+
 discord.on("interactionCreate", async interaction=>{
+  console.log("🌲",interaction )
   if(interaction.isCommand()){
   }
+  console.log(interaction)
 })
-*/ 
 
 
 
-discord.on("messageCreate", async msg=>{
 
+discord.on("messageCreate", async msg =>{
   if(!msg.author.bot){
-
     if(!msg.attachments.size){
-      var mm = msg.content.toLowerCase();
-      if ( mm == "clear"){Action.clearChannel();}
-      else {await Chat.send( msg.content );}
+      Chat.send( msg.content ); 
     }
-
     else{
-      //if there's attachment
     }
 
   }
+})
+
+
+discord.on("messageReactionAdd", async reaction =>{
+  console.log(reaction._emoji.name)
 })
 
 

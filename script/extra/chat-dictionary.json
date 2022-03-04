@@ -5,14 +5,14 @@
 
   {
       "entities" :["task"], "intents" : ["request_notion_read"] , "traits" :{},
-      "script" : ["Action.TellMeAboutTasks(bot.entities)"] 
+      "script" : ["Action.TellMeAboutTasks(entities)"] 
   },
   {
     "entities" :["project"], "intents" : ["request_notion_read"] , "traits" :{},
-    "script" : ["Action.TellMeAboutProject(bot.entities)"] 
+    "script" : ["Action.TellMeAboutProject(entities)"] 
   },
   {
-      "entities" :["create" ,"log"] , "intents" : ["request_notion_create"] , "traits" :{} ,
+      "entities" :["create" ,"log"] , "intents" : ["request_notion_write"] , "traits" :{} ,
       "script" : ["Action.CreateNewLog()"]  
   },
   {
@@ -21,31 +21,31 @@
   },
   {
     "entities" :["yes"], "intents" : ["respond"] , "traits" :{} ,
-    "script" : ["store.script"] 
+    "script" : ["Action.respondYes()"] 
   },
   {
     "entities" :["no"], "intents" : ["respond"] , "traits" :{} ,
-    "message" : ["No problem" ,"No worries"]
+    "script" : ["Action.respondNo()"] 
   },
   {
-    "entities" :["remind","datetime"], "intents" : ["request_notion_create"] , "traits" :{} ,
-    "script" : ["Action.createReminder(bot.entities )"] , "alert" :"Do you want me to remind you that time?"
+    "entities" :["reminder"], "intents" : ["request_notion_write"] , "traits" :{} ,
+    "script" : ["Action.createReminder(entities )"] 
   },
   {
     "entities" :["twitter"], "intents" : ["request_share"] , "traits" :{} ,
       "script": ["Action.tweetThat()"]
   },
   {
-    "entities" :["remind"], "intents" : ["request_notion_read"] , "traits" :{} ,
-      "script": ["bot.datas = Action.tellMeAboutReminders()"]
+    "entities" :["reminder"], "intents" : ["request_notion_read"] , "traits" :{} ,
+      "script": [" Action.tellMeAboutReminders()"]
   },
   {
     "entities" :["delete","number"], "intents" : ["request_notion_delete"] , "traits" :{} ,
-    "script": ["Promise.resolve( bot.datas ).then( datas => Action.deleteSelected( datas , bot.entities )); "]
+    "script": [" Action.deleteSelected(  entities ); "]
   },
   {
     "entities" :["hi"], "intents" : ["greeting"] , "traits" :{} ,
-    "script": ["Action.userIn()"]
+    "script": ["Action.userInOut()"]
   },
   {
     "entities" :["bye"], "intents" : ["greeting"] , "traits" :{} ,
@@ -53,7 +53,7 @@
   },
   {
     "entities" :[], "intents" : ["request_location"] , "traits" :{} ,
-    "script": ["Action.TellMeAboutLocation(bot.entities)"]
+    "script": ["Action.TellMeAboutLocation(entities)"]
   }
 
  

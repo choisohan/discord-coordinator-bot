@@ -148,6 +148,7 @@ class notionClient{
             var t = Type.text[0].plain_text
             text += t; 
         }
+        console.log(text); //⬜debug
         return text;
     }
     
@@ -162,7 +163,6 @@ class notionClient{
     async createNew( DATABASE_ID , style , BUILD ){
         var pages = await this.getPages(DATABASE_ID)
         var latest = pages[0];
-        //console.log( "📆",latest.properties.Date)
         latest = await this.allChildren( latest , BUILD  )
         style.children = latest.children;               
         var info = await newPageInfo( latest , style );
@@ -175,12 +175,16 @@ class notionClient{
         await NOTION.blocks.delete({block_id: block_ID});
     }
 
+    /*
     async spreadItem( page , _maxcount ){
         // get all chldren
         var children = await this.getChildren( page ); 
-        children = children.filter( child=> !["column","column_list"].includes(child.type) )
+
+        children = children.filter( child => !["column","column_list"].includes(child.type) )
         //console.log( children.length)
         var Chunks = chunk( children, _maxcount);
+        console.log("✨💫💫✨", children , Chunks )
+
 
         // get columns
         var columns = await this.getColumns( page ); 
@@ -196,6 +200,21 @@ class notionClient{
             }
         }
     }
+    */
+
+    async parent( block , goalParent ){
+        console.log("👼")
+        
+        await NOTION.blocks.children.append({
+            block_id : goalParent.id, children :[ duplicatedBlock( block  ) ]
+        })
+        await NOTION.blocks.delete({ block_id : block.id })
+    }
+
+
+
+
+
     async itemFilter ( arr, _filters){
         return await arr.filter(item => {
             var result = true; 
@@ -219,12 +238,10 @@ class notionClient{
 ////////////////////////////////////
 var duplicatedBlock = (block) => {
     var Text = block[block.type].text;
-    console.log( "🍈 ",Text )
     var object =  {object: 'block' }
     object.type = block.type
-    object[block.type] = {
-        text: Text,checked: false
-    }
+    object[block.type] = {text: Text,checked: false}
+    console.log( "🍈 ",object.to_do.text.length , object.to_do.text[0] )
     return object
 }
 var PropertyHQ = ( _type, _value ) =>{
@@ -256,8 +273,13 @@ var newPageInfo =  async(  _refPage , _style) =>{
     console.log( "😗",_properties )
     var _info = { parent: { database_id : _refPage.parent.database_id },
                 properties: _properties,
-                children: "children" in _style ? _style.children : emptyChildren,
-                icon: {type:"emoji", emoji: _refPage.icon.emoji } }
+                children: "children" in _style ? _style.children : emptyChildren}
+    
+    if("icon" in _refPage &&  _info.icon != null ){
+        _info.icon = {type:"emoji", emoji: _refPage.icon.emoji } 
+    }
+    
+   //⬜ emoji
     return  _info;
 }
 

@@ -7,9 +7,9 @@ import { Routes } from 'discord-api-types/v9'
 import * as Chat from '../action/Chat.js'
 
 //export var discord = new Discord.Client({intents:["GUILDS","GUILD_MESSAGES"]});
-export var discord = new Discord.Client({intents:[
-    Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES
-]});
+export var discord = new Discord.Client(
+    {intents:[Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES ,Intents.FLAGS.GUILD_MESSAGE_REACTIONS],
+    partials: ['MESSAGE', 'CHANNEL', 'REACTION'],});
 
 
 const SlashTweet = new SlashCommandBuilder()
@@ -55,12 +55,13 @@ discord.once("ready", ()=>{
     
     channel = discord.channels.cache.find(c => c.name === "general")
    // channel.send("I am in✨");
-    // morningCheckUp(); 
     botIn(); 
+
+    //Chat.send("what is todays todo?")
 
 
     //Test
-    Chat.send("what time is in korea?")
+    //Chat.send("can you remind me every 1 hour for stretching?")//this is for debugging
 
 })
 
