@@ -475,7 +475,7 @@ export async function getRecipe(){
 }
 
 export async function getSocialStat(){
-    /*
+    
     var stats = {}
     
     const browser = await puppeteer.launch();
@@ -483,19 +483,24 @@ export async function getSocialStat(){
 
     var URL = 'https://www.instagram.com/happping_min/'
     await page.goto(URL, {waitUntil: 'networkidle2'});
-    stats.instagram = await page.$$eval('.Y8-fY', els => els.map(el => el.textContent ) );
-    //stats.instagram = await page.$x('//*[@id="react-root"]/section/main/div/header/section/ul/li[2]/a/div/span')
-    //stats.instagram = await page.evaluate( instagram => instagram.textContent,stats.instagram )
-   // stats.instagram = stats.instagram.evaluate(el => el.textContent)
+    stats.instagram = await page.$$eval('.Y8-fY', els => els.map(el => el.textContent ) ); //posts, followers, following
+    stats.instagram = stats.instagram[1];
+    
+    var URL = 'https://twitter.com/happping_min'
+    await page.goto(URL, {waitUntil: 'networkidle2'});
+    stats.twitter = await page.$$eval('.css-4rbku5', els => els.map(el => el.textContent ).filter(el => el.includes("Followers") ) );
+    stats.twitter = stats.twitter[0]
 
-    console.log( stats.instagram)
 
-    await page.screenshot({path: 'tempFolder/tmp_test.png'});
+    var _embeded = new MessageEmbed()
+    _embeded.addFields( {name :"❤️Instagram" , value : stats.instagram  })
+    _embeded.addFields( {name :"❤️Twitter" , value :  stats.twitter   })
+
+
+    channel.send({embeds : [_embeded] }) 
     await browser.close; 
-    */ 
 
 }
-getSocialStat();  
 
 export async function botIn(){
     // When a bot initiate, all the reminder except daily event starts.
