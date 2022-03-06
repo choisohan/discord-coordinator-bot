@@ -87,25 +87,46 @@ var getCalendar = (wit_datetime ) =>{
 
 var allCrons =[];
 export async function initCrons( pages ){
+    pages = pages.filter( d => d.properties.Unit.select == null || ['minute','hour','day'].includes(d.properties.Unit.select.name)    )
 
-    pages.forEach(  reminder => {
-        var P = reminder.properties; 
-        var cronTime = P['Cron Time'].formula.string;
-        var name = P['Name'].title[0].plain_text 
-        var messages = P['Messages'].rich_text.length > 0 ? (P['Messages'].rich_text[0].plain_text).split(',') : [] ; 
-        var script = P['Script'].rich_text.length > 0 ? P['Script'].rich_text[0].plain_text  : null ;  
         
+    pages.forEach(  async reminder => {
+        var blocks = await notion.getChildren( reminder );
+        blocks = blocks
+        .map( block => {return {[block.type]:
+            block.type =="image" ? block[block.type].external.url :
+            block.type =="video" ? block[block.type].external.url :
+            block[block.type].text
+                .map( item => item.plain_text)[0]
+        }})
+        .filter( block => Object.values(block)[0] != undefined )
+
+        // check script is in
+        var scripts = blocks.filter( block => Object.keys(block)[0] == "callout"  )
+        var messages = blocks.filter( block => !scripts.includes(block))
+        messages= messages.map( block => Object.values(block)[0] )
+        scripts= scripts.map( block => Object.values(block)[0] )
+        var cronTime = reminder.properties['Cron Time'].formula.string;
+        var name = reminder.properties['Name'].title[0].plain_text 
         var cron = new CronJob( cronTime , ()=>{
-            if( messages.length > 0 ){sendAlarm( messages[Math.floor( messages.length*Math.random() )] )}
-            else{ sendAlarm( "it's time for "+ name +" ✨");}
-            if(script){eval(script);}     
+            if( messages.length > 0 ){
+                sendAlarm( messages[ Math.floor( messages.length * Math.random() )] )
+            }
+            else{
+                sendAlarm( "it's time for "+ name +" ✨");
+            }
+            if( scripts.length > 0 ){
+                
+                try{
+                    eval(scripts[Math.floor( scripts.length * Math.random() )]  )
+                }catch(error){
+                    console.log( channel.send("⚠️" + reminder.Name.title[0].plain_text +" : "+ error.message) )
+                }                             
+            }     
         }, null, null , process.env.TIMEZONE);
         allCrons.push(cron);
         cron.start(); 
-       
     })
-    
-
 }
 
 export async function respondYes( ){
@@ -217,7 +238,7 @@ export var deleteSelected = async ( _entities ) =>{
     
 }
 
-var sendAlarm = ( message ) =>{channel.send("⏰"+ message );}
+var sendAlarm = ( message ) =>{channel.send( message );}
 
 var lineChange = `
 `
@@ -434,8 +455,8 @@ export async function getGIF(search_term){
     })
 }
 
-export async function getRecipe(){
-    var URL = 'https://tasty.co/topic/lunch';
+export async function getRecipe(_keyword){
+    var URL = 'https://tasty.co/search?q='+_keyword+'&sort=popular'
     var _selector ='.feed-item__img-wrapper';
 
     const browser = await puppeteer.launch();
@@ -476,7 +497,7 @@ export async function getRecipe(){
     channel.send(recipe.video);
 }
 
-export async function getSocialStat(){
+export async function TellMeAboutSocialStat(_entitie){
     
     var stats = {}
     
@@ -510,13 +531,11 @@ export async function botIn(){
     // When a bot initiate, all the reminder except daily event starts.
     
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
-    //reminders = await reminders.filter( data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
+    reminders = await reminders.filter(data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
     //initCrons(reminders);    
-    //CreateNewLog()
 
 }
 export async function userIn(){
-    console.log("You are in!")
     var messages = ['Hello!','You came back!',"Hey Darling!"];  
     channel.send( messages[Math.floor( Math.random() * messages.length )]);
 
@@ -548,7 +567,14 @@ export async function userIn(){
         // 9. if task is too many
         var nextColumn = columns[Math.min(day + 1, columns.length)]
         askBusy(10, leftTodo , nextColumn ); 
-    }) 
+    })
+    if( allTodo.length-leftTodo.length < 5 ){
+        var TASKS_URL = "https://www.notion.so/happpingmin/30ddc8bbffcc481cb702da35789f3cf5?v=f6894f5cc1d246a0b49179d270748e2e"
+        channel.send(`You seems like free, check out [Tasks Page](${TASKS_URL})`)
+    }
+    if( 1 == new Date().getDay ){
+        channel.send("Do you want me to create new log?")
+    }
 }
 
 export async function userOut(){

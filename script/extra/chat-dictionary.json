@@ -1,8 +1,4 @@
-
-
-
 [
-
   {
       "entities" :["task"], "intents" : ["request_notion_read"] , "traits" :{},
       "script" : ["Action.TellMeAboutTasks(entities)"] 
@@ -54,7 +50,12 @@
   {
     "entities" :[], "intents" : ["request_location"] , "traits" :{} ,
     "script": ["Action.TellMeAboutLocation(entities)"]
+  },
+  {
+    "entities" :[], "intents" : ["request_SNS_read"] , "traits" :{} ,
+    "script": ["Action.TellMeAboutSocialStat(entities)"]
   }
+
 
  
 ]

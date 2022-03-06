@@ -1,3 +1,14 @@
+# ⭐Guide to write on notion
+
+## Adding Script
+create callout block and write as usual
+except don't use "", '' but use backtick `
+
+![](/src/callout.JPG)
+
+
+---
+
 # Required Env Var
 < Discord > 
 - BOT_TOKEN 
@@ -69,3 +80,7 @@ _hour : empty(prop("Unit")) ? if(hour(prop("Date")) + minute(prop("Date")) == 0,
 ## SNS
 - [x] Tweeting by discord
 - [ ] Tweet with Image ( uploading from discord media url doesn't work.. hm )
+
+
+
+

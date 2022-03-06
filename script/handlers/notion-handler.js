@@ -65,6 +65,7 @@ class notionClient{
             var children =  await NOTION.blocks.children.list({ block_id: _block.id });
             return children.results
         }else{
+            console.log("none")
             return [] }
     }
     

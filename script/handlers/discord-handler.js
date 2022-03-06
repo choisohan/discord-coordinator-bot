@@ -43,26 +43,17 @@ discord.once("ready", ()=>{
         version:"9"
     }).setToken(process.env.BOT_TOKEN);
 
-
+    
     (async () =>{
         try{
             await rest.put(Routes.applicationGuildCommands(clientId ,guildId ),{body:commands});
-            //console.log("successfully registed commands.")
         }catch(err){
-            //console.log(" 🌀",err)
+            channel.send(" 🌀"+ err)
         }
     })()
+
     
     channel = discord.channels.cache.find(c => c.name === "general")
-   // channel.send("I am in✨");
-   // botIn(); 
-
-   // Chat.send("I am so excited!")
-
-
-    //Test
-    //Chat.send("can you remind me every 1 hour for stretching?")//this is for debugging
-
 })
 
 discord.login(process.env.BOT_TOKEN);
