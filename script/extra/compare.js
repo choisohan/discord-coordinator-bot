@@ -41,3 +41,24 @@ export function chunk (arr, len) {
   
     return chunks;
   }
+
+var lineChange = `
+`
+export function arrayToString( arr ){
+    var string = ''
+    for(var i = 0;  i < arr.length; i++ ){
+        if( i != 0 ){string += lineChange;}
+        string += arr[i];
+    }  
+    return string 
+}
+
+export function arrayToString2( arr ){
+    var string = ''
+    for(var i = 0;  i < arr.length; i++ ){
+        if( i != 0 ){string += lineChange;}
+        string += i+". "+ arr[i];
+    }  
+    return string 
+}
+

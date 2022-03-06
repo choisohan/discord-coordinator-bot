@@ -1,7 +1,6 @@
 import * as Wit from '../handlers/wit-handler.js'
 import * as Action from './Actions.js'
 import { channel } from '../handlers/discord-handler.js';
-import * as Search from '../handlers/search-handler.js'
 var bot = {}; //this will reset whenever the script reinitiates
 
 
@@ -27,7 +26,7 @@ export async function send( mm ){
         // JUST CHAT
         var keywords = Object.keys(entities);
         keywords = keywords[ Math.floor(keywords.length * Math.random()) ]
-        var gif = await Search.getGIF( keywords );
+        var gif = await Action.getGIF( keywords );
         channel.send(gif);
 
       }

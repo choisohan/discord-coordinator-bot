@@ -7,7 +7,16 @@ import { tweet } from "../handlers/twitter-handler.js";
 import  weather from 'weather-js';
 import { MessageEmbed } from 'discord.js';
 import moment from 'moment';
+import pkg from 'puppeteer';
+import * as Variable from '../extra/compare.js';
+
+const  puppeteer  = pkg;
+
+
 var stored = []; 
+
+var getNotionDate = _date=>{ return _date.toISOString().split('T')[0] }
+
 /*
 export var MoveTodaysLeftTask = async()=>{
     var pages = await notion.getPages( notion.databases["Worklog"] );
@@ -24,10 +33,7 @@ export var MoveTodaysLeftTask = async()=>{
     var text = "I just moved today's left tasks to [Tasks]" 
     channel.send(text)
 }
-*/ 
-
-
-var getNotionDate = _date=>{ return _date.toISOString().split('T')[0] }
+*/
 
 export var CreateNewLog = async () =>{
 
@@ -391,12 +397,111 @@ Do anything you like!❤`)
 
 
 
+export async function TellMeAboutLocation(_entitie){
+    var location = "location" in _entitie ? _entitie.location.name : "Vancouver"
+    
+    // 1. Create Embed
+    var _newEmbed = new MessageEmbed();
+    _newEmbed.setTitle( "🗺️ " + location );
+
+    if( "time" in _entitie ){
+        var requestTime = new Date();
+        var localTime = moment.tz( requestTime , _entitie.location.timezone ).format('LT');
+        _newEmbed.setFields({name : "Local Time", value : localTime} )
+    }
+    
+    if("weather" in _entitie){
+        _newEmbed = await getWeather(_newEmbed , location ); 
+    }
+
+    // 2. Send
+    if(!_newEmbed.description &&  !_newEmbed.fields ){}
+    else{channel.send({embeds : [_newEmbed] })}
+
+}
+
+export async function getGIF(search_term){
+    return new Promise(async (resolve, err)=>{
+        var url = `http://api.giphy.com/v1/gifs/search?q=${search_term}&api_key=${process.env.GIPHY_KEY}&limit=5`
+        fetch(url)
+            .then( response =>response.json())
+            .then(content => {
+                var imgURL = content.data[0].images.downsized.url;
+                resolve(imgURL)
+        })
+    })
+}
+
+export async function getRecipe(){
+    var URL = 'https://tasty.co/topic/lunch';
+    var _selector ='.feed-item__img-wrapper';
+
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.goto(URL, {waitUntil: 'networkidle2'});
+
+    var contents = await page.$$(_selector);
+    var random = contents[Math.floor(contents.length * Math.random())]
+    var alink = await random.getProperty('parentNode')
+    alink = await alink.getProperty("href");
+    alink =  alink._remoteObject.value
+
+    await page.goto( alink,{waitUntil: 'networkidle2'})
+
+    const recipe = {};
+
+    recipe.ingredients = await page.$$eval('.ingredient', el => el.map( el=> el.textContent)  )
+    recipe.ingredients = Variable.arrayToString(recipe.ingredients)
+    
+    recipe.instruction = await page.$$eval('.xs-mb2', els =>  {
+        return els.filter( el => el.classList.length == 1 )
+            .map(el=> el.textContent)
+    })
+    recipe.instruction = recipe.instruction.slice(recipe.instruction.length/2)
+    recipe.instruction = Variable.arrayToString2(recipe.instruction)
+
+    recipe.thumbnail = await page.$eval('.video-js',el => el.getAttribute('poster') )
+    recipe.video = await page.$eval('source',el => el.src )    
+    await browser.close; 
+
+    // Send
+    var _embeded = new MessageEmbed().setTitle(` 👩‍🍳💘 Recipe of Love `)
+    _embeded.setImage( recipe.thumbnail ); 
+    _embeded.addFields( {name :"ingredients" , value : recipe.ingredients , inline:true  })
+    _embeded.addFields( {name :"instruction" , value : recipe.instruction  , inline:true })
+    channel.send({embeds : [_embeded] }) 
+
+    channel.send(recipe.video);
+}
+
+export async function getSocialStat(){
+    /*
+    var stats = {}
+    
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+
+    var URL = 'https://www.instagram.com/happping_min/'
+    await page.goto(URL, {waitUntil: 'networkidle2'});
+    stats.instagram = await page.$$eval('.Y8-fY', els => els.map(el => el.textContent ) );
+    //stats.instagram = await page.$x('//*[@id="react-root"]/section/main/div/header/section/ul/li[2]/a/div/span')
+    //stats.instagram = await page.evaluate( instagram => instagram.textContent,stats.instagram )
+   // stats.instagram = stats.instagram.evaluate(el => el.textContent)
+
+    console.log( stats.instagram)
+
+    await page.screenshot({path: 'tempFolder/tmp_test.png'});
+    await browser.close; 
+    */ 
+
+}
+getSocialStat();  
 
 export async function botIn(){
     // When a bot initiate, all the reminder except daily event starts.
-    var reminders = await notion.getPages( notion.databases["Reminders"] );
-    reminders = await reminders.filter( data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    )
-    //initCrons(reminders);     
+   // var reminders = await notion.getPages( notion.databases["Reminders"] );
+   // reminders = await reminders.filter( data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
+    //initCrons(reminders);    
 }
 export async function userIn(){
     console.log("You are in!")
@@ -431,7 +536,16 @@ export async function userIn(){
         // 9. if task is too many
         var nextColumn = columns[Math.min(day + 1, columns.length)]
         askBusy(10, leftTodo , nextColumn ); 
-    })    
+    }) 
+}
+
+export async function userOut(){
+    console.log("You are out!")
+    var messages = ["Bye! Have a good day!" ,"See ya!"]
+    channel.send( messages[Math.floor( Math.random() * messages.length )]);
+
+    allCrons.forEach( item => { item.stop() })
+    allCrons = []; 
 }
 
 async function askBusy( _maxCount , tasks , moveGoal ){
@@ -449,34 +563,3 @@ Do you want me to move some tasks to tmr?`];
 }
 
 
-export async function userOut(){
-    console.log("You are out!")
-    var messages = ["Bye! Have a good day!" ,"See ya!"]
-    channel.send( messages[Math.floor( Math.random() * messages.length )]);
-
-    allCrons.forEach( item => { item.stop();} )
-    allCrons = []; 
-}
-
-export async function TellMeAboutLocation(_entitie){
-    var location = "location" in _entitie ? _entitie.location.name : "Vancouver"
-    
-    // 1. Create Embed
-    var _newEmbed = new MessageEmbed();
-    _newEmbed.setTitle( "🗺️ " + location );
-
-    if( "time" in _entitie ){
-        var requestTime = new Date();
-        var localTime = moment.tz( requestTime , _entitie.location.timezone ).format('LT');
-        _newEmbed.setFields({name : "Local Time", value : localTime} )
-    }
-    
-    if("weather" in _entitie){
-        _newEmbed = await getWeather(_newEmbed , location ); 
-    }
-
-    // 2. Send
-    if(!_newEmbed.description &&  !_newEmbed.fields ){}
-    else{channel.send({embeds : [_newEmbed] })}
-
-}
