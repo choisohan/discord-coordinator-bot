@@ -47,22 +47,21 @@ export var CreateNewLog = async () =>{
         return _container;
     }
 
-    var style = { Name : mmdd(monday) }
+    var style = { Name : mmdd(monday) , Group : 'Log', icon : '📙'}
     style.Date = {start :getNotionDate(monday)  }
-
-    channel.send("Do you want me to create new 📒log?")
+    
+    channel.send(`Do you want me to create new 📒log?`)
     
     stored.action = async() =>{
-        var newPage =  await notion.createNew( notion.databases["Worklog"] , style ,BUILD ); 
-        /*
-        if( newPage.children.length > 0 ){
-            await notion.spreadItem( newPage , 7 );
-        }
-        */ 
+        var newPage =  await notion.createNew( process.env.NOTION_DB_ID, style ,BUILD ); 
+        
+       // if( newPage.children.length > 0 ){await notion.spreadItem( newPage , 7 );}
+        
         channel.send(`Here it is!`) 
         var _newEmbed = newEmbed( {description :` [📒${mmdd(monday)}](${newPage.url}) `} )
         channel.send({embeds : [_newEmbed] })
     }
+    
 }
 
 export async function clearChannel(){
@@ -126,7 +125,7 @@ export async function createReminder(entitie){
     console.log( entitie )
     // 0. sort
     var _agenda = entitie.agenda_entry ? entitie.agenda_entry : "something" ;
-    var style = { Name : _agenda };
+    var style = { Name : _agenda , Group: 'Reminder' , icon: "⏰"};
     if('duration' in entitie){
         //it's recurring task
         style.Unit = Object.keys(entitie.duration)[0] ;
@@ -140,7 +139,7 @@ export async function createReminder(entitie){
 
     // 1. check up message
     var _newEmbed = new MessageEmbed();
-    _newEmbed.setTitle("⏰ Reminder");
+    _newEmbed.setTitle("New Reminder");
     Object.keys(style).forEach( k=>{
         _newEmbed.addFields({name : k , value :style[k].toString(),inline:true})
     })
@@ -151,7 +150,7 @@ export async function createReminder(entitie){
     stored.action = async() =>{
         
         // 1. add notion
-        var page = await notion.createNew( notion.databases["Reminders"] , style ,null ); 
+        var page = await notion.createNew( process.env.NOTION_DB_ID , style ,null ); 
         var cronTime = await page.properties['Cron Time'].formula.string ;
    
         // 2. set Cron
@@ -168,7 +167,7 @@ export async function createReminder(entitie){
 
 export var tellMeAboutReminders = async () =>{
     // 1. get
-    var reminders = await notion.getPages( notion.databases["Reminders"] );
+    var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
     reminders = reminders.map( item => 
             { return  {  Name : item.properties.Name.title[0].plain_text,
                         Date : item.properties.Date.date.start,
@@ -291,7 +290,8 @@ export var TellMeAboutTasks = async (_entitie) =>{
     var date = 'datetime' in _entitie ? witTimeToDate(_entitie.datetime) : new Date()
     var day =  date.getDay();
     day = day == 0 ? 6: day - 1;  //start of the week is monday
-    var pages = await notion.getPages( notion.databases["Worklog"] );
+
+    var pages = await notion.datas.filter( data => notion.groupFilter(data, "Log") )
     var columns = await notion.getColumns( pages[0] ) ; 
 
     Promise.resolve( getTasks(day,columns ) ).then( async ([allTodo, leftTodo] )=>{
@@ -300,13 +300,13 @@ export var TellMeAboutTasks = async (_entitie) =>{
         _newEmbed.setTitle (  "🌈 " + date.toDateString()  ); 
         if("how_many" in _entitie){
             text = "You have  " + leftTodo.length.toString() +"/" + allTodo.length.toString() +" tasks" ;
-            _newEmbed.setDescription( text ); 
         }
         else{
             stored.datas = await !"remain" in _entitie ? allTodo : leftTodo ;
-            text = await notion.blocks_to_text( stored.datas );
-            _newEmbed.setDescription( text ); 
+            text = await notion.blocks_to_text( stored.datas );  
         }
+        text += lineChange += `[📙${pages[0].properties.Name.title[0].plain_text}](${pages[0].url})`
+        _newEmbed.setDescription( text ); 
         channel.send({embeds : [_newEmbed] })
         var nextColumn = columns[Math.min(day + 1, columns.length)]
         askBusy( 10 ,leftTodo , nextColumn ); 
@@ -334,7 +334,9 @@ var notionDateToDate = (stringDate) =>{
 export var TellMeAboutProject = async (_entitie)=>{
 
     var Now = new Date(); 
-    var AllProjects = await notion.getPages( notion.databases["Projects"] );
+    
+    var AllProjects = await notion.datas.filter( data => notion.groupFilter(data,"Project" ) )
+
     var Scheduled = AllProjects.filter( p => p.properties.Date.date != null && p.properties.Date.date.end != null )
     var Completed = Scheduled.filter( p => Now.getTime() >= notionDateToDate(p.properties.Date.date.end).getTime() )
     var Incompleted = Scheduled.filter( p => !Completed.includes(p));
@@ -499,21 +501,26 @@ export async function getSocialStat(){
 
     channel.send({embeds : [_embeded] }) 
     await browser.close; 
-
 }
 
+
+
 export async function botIn(){
+    console.log("bot in ")
     // When a bot initiate, all the reminder except daily event starts.
-   // var reminders = await notion.getPages( notion.databases["Reminders"] );
-   // reminders = await reminders.filter( data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
+    
+    var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
+    //reminders = await reminders.filter( data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
     //initCrons(reminders);    
+    //CreateNewLog()
+
 }
 export async function userIn(){
     console.log("You are in!")
     var messages = ['Hello!','You came back!',"Hey Darling!"];  
     channel.send( messages[Math.floor( Math.random() * messages.length )]);
 
-    var reminders = await notion.getPages( notion.databases["Reminders"] );
+    var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
     reminders = reminders.filter( data => data.properties.Unit.select == null || ['minute','hour','day'].includes(data.properties.Unit.select.name)    )
     initCrons(reminders); 
 
@@ -526,7 +533,7 @@ export async function userIn(){
     // 1. todo 
     var day = new Date().getDay()
     day = day == 0 ? 6: day - 1; 
-    var pages = await notion.getPages( notion.databases["Worklog"] );
+    var pages = await notion.datas.filter( data => notion.groupFilter(data,"Log" ) )
 
     var columns = await notion.getColumns( pages[0] ) ; 
     Promise.resolve( getTasks(day, columns ) ).then( async ( [ allTodo , leftTodo ] ) =>{

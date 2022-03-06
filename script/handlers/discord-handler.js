@@ -1,6 +1,6 @@
 import Discord, { Client, Intents, Collection } from "discord.js";
 import 'dotenv/config' 
-import { botIn } from "../action/Actions.js";
+//import { botIn } from "../action/Actions.js";
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { REST } from "@discordjs/rest";
 import { Routes } from 'discord-api-types/v9'
@@ -55,7 +55,7 @@ discord.once("ready", ()=>{
     
     channel = discord.channels.cache.find(c => c.name === "general")
    // channel.send("I am in✨");
-    botIn(); 
+   // botIn(); 
 
    // Chat.send("I am so excited!")
 

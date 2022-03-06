@@ -5,23 +5,20 @@ import { discord , channel } from './discord-handler.js'
 import { CronJob } from 'cron';
 import { ApplicationCommandPermissionType } from 'discord-api-types/v9';
 import { allisIn ,chunk } from '../extra/compare.js';
+import { botIn } from '../action/Actions.js';
+var NOTION; var BLOCKS = [] ; 
 
-var NOTION; var BLOCKS = [] ;
 class notionClient{
     constructor(){
         NOTION =  new Client( {auth :  process.env.NOTION_TOKEN } );
-        var getDatas = async () => {
-            this.home =  await NOTION.blocks.children.list({ block_id:process.env.NOTION_HOME_ID });
-           this.databases = {}; 
-           this.home.results.forEach(item =>{
-               if( typeof(item.child_database) =='object'  ){
-                    this.databases[item.child_database.title] = item.id
-               }
-           })
-        }
-        getDatas()
-    }
+        Promise.resolve( this.getPages(process.env.NOTION_DB_ID) ).then(
+            resolve => {
+                this.datas = resolve;
+                botIn()
+            }
+        )
 
+    }
 
     async getPages( database_ID ) {
 
@@ -59,7 +56,7 @@ class notionClient{
     
     async modifyPage( _page , _properties ){
         _properties = Object.entries(_properties).filter = ( [ key , value ] ) => _page.includes( key ) ;
-        _properties = Object.fromEntries(properies)
+        _properties = Object.fromEntries(_properties)
         console.log( "🌸",_properties )
     }
 
@@ -160,15 +157,18 @@ class notionClient{
        return text;
     }
 
+    groupFilter( data , value){
+        return data.properties.Group.select != null && data.properties.Group.select.name == value;
+    }
+
     async createNew( DATABASE_ID , style , BUILD ){
-        var pages = await this.getPages(DATABASE_ID)
+        var pages = this.datas.filter(d => this.groupFilter(d, style.Group) )
+        //var pages = await this.getPages(DATABASE_ID)
         var latest = pages[0];
         latest = await this.allChildren( latest , BUILD  )
         style.children = latest.children;               
         var info = await newPageInfo( latest , style );
         return await NOTION.pages.create( info ); 
- 
-        
     }
 
     async deleteItem( block_ID ){
@@ -260,26 +260,32 @@ var PropertyHQ = ( _type, _value ) =>{
     if(_type == 'date'){
         return {type : _type , [_type] : _value }
     }
+    if(_type =="icon"){
+        return {type : "emoji" , [_type] : _value }
+    }
 }
 
 var newPageInfo =  async(  _refPage , _style) =>{
     _style.Name = 'Name' in _style ? _style.Name : "New"; 
     var _properties = {}
-    var styleKeys = Object.keys(_style).filter( _st => _st != "children" )
+    var styleKeys = Object.keys(_style).filter( _st => _st != "children" &&  _st != "icon" )
 
     styleKeys.forEach(_st => {
+        console.log(_st)
         _properties[_st] = PropertyHQ( _refPage.properties[_st].type , _style[_st] ); 
     })
-    console.log( "😗",_properties )
     var _info = { parent: { database_id : _refPage.parent.database_id },
                 properties: _properties,
                 children: "children" in _style ? _style.children : emptyChildren}
-    
+    /*
     if("icon" in _refPage &&  _info.icon != null ){
         _info.icon = {type:"emoji", emoji: _refPage.icon.emoji } 
     }
+    */ 
+   if("icon" in _style){
+    _info.icon = { type: 'emoji', emoji: _style.icon }
+   }
     
-   //⬜ emoji
     return  _info;
 }
 
