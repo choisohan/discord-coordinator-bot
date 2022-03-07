@@ -49,7 +49,7 @@
   },
   {
     "entities" :["hi"], "intents" : ["greeting"] , "traits" :{} ,
-    "script": ["Action.userInOut()"]
+    "script": ["Action.userIn()"]
   },
   {
     "entities" :["bye"], "intents" : ["greeting"] , "traits" :{} ,

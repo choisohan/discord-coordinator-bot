@@ -1,7 +1,6 @@
 import 'dotenv/config'
 import { notion } from "../handlers/notion-handler.js";
 import { channel,discord,newEmbed } from "../handlers/discord-handler.js";
-import { monday,mmdd } from '../extra/scheduler.js';
 import { CronJob } from 'cron'
 import { tweet } from "../handlers/twitter-handler.js";
 import  weather from 'weather-js';
@@ -9,16 +8,25 @@ import { MessageEmbed } from 'discord.js';
 import moment from 'moment';
 import pkg from 'puppeteer';
 import * as Variable from '../extra/compare.js';
+moment.locale('en-ca')
 
-var timezone = ( DATE ) =>{return new Date(DATE.toLocaleDateString('en-US',{timeZone : process.env.TIMEZONE }))}
 const  puppeteer  = pkg;
-var stored = []; 
-var getNotionDate = _date=>{ return _date.toISOString().split('T')[0] }
+var stored = {}; 
+
+var now = (DATE) => moment(DATE) 
+var monday  = (DATE) =>  moment().subtract( DATE.getDay()-1,  'days')
+var sunday  = (DATE) =>  moment().add(  7-DATE.getDay(),  'days')
+var getDayMondayStart = (MOMENT) => MOMENT.format('d')-1 > 0 ? MOMENT.format('d')-1 : 6
+var mmdd = (MOMENT) =>{
+    var week = MOMENT.format('L').split('-');
+    return week[1] + week[2]
+}
 
 export async function createNewTask( _name ){
     try{
         var style ={ Name : _name, Group: "Task" }
         var newPage = await notion.createNew(process.env.NOTION_DB_ID, style, null); 
+        notion.datas.push(newPage)
         var _newEmbed = new MessageEmbed();
         _newEmbed.setDescription(`✨The new tasks [${_name}](${newPage.url})`)
         channel.send({embeds : [_newEmbed] })
@@ -35,7 +43,8 @@ export async function inspectOldTasks(_entitie){
 
         var worklog = await getTodaysWorklog();
         var columns = await notion.getColumns( worklog );
-        var today = timezone( new Date() ).getDay() - 1 ; 
+        //var today = timezone( new Date() ).getDay() - 1 ; 
+        var today = getDayMondayStart(now(new Date));
 
         var tasks = notion.datas.filter( data => notion.groupFilter(data, "Task") )
         tasks = tasks.reverse();
@@ -96,7 +105,7 @@ export async function fromLogToTasks(){
     try{
         var worklog = await getTodaysWorklog();
         var columns = await notion.getColumns( worklog );
-        var today = timezone( new Date() ).getDay() - 1 ; 
+       var today = getDayMondayStart(now(new Date));
         var TodaysColumn = columns[today];
         var blocks = await notion.getChildren( TodaysColumn.id, {type:'to_do'} );
         blocks = blocks.filter( b => !b.to_do.checked )
@@ -125,31 +134,37 @@ export async function translate(){
 
 
 export var CreateNewLog = async () =>{
-
-    var BUILD = async ( _container ) =>{
-        var allowed = ["to_do", "heading_1","heading_2", "heading_3", "column", "column_list" ]
-        var all = _container.body.filter( i => allowed.includes(i.type) )
-        all =  await notion.itemFilter( all,  {checked: true } );
-        var leftTodo = all.filter(item => item.type == 'to_do' );
-        _container.header = _container.header.concat(leftTodo);
-        _container.body = all.filter( item => !leftTodo.includes(item) ) 
-        return _container;
+    try{
+        var BUILD = async ( _container ) =>{
+            var allowed = ["to_do", "heading_1","heading_2", "heading_3", "column", "column_list" ]
+            var all = _container.body.filter( i => allowed.includes(i.type) )
+            all =  await notion.itemFilter( all,  {checked: true } );
+            var leftTodo = all.filter(item => item.type == 'to_do' );
+            _container.header = _container.header.concat(leftTodo);
+            _container.body = all.filter( item => !leftTodo.includes(item) ) 
+            return _container;
+        }
+    
+        var style = { Name : mmdd( monday(new Date())) , Group : 'Log', icon : '📙'}
+        style.Date = {start : monday(new Date()).format('L') ,end : sunday(new Date()).format('L') }
+        console.log( style.Date.start )
+        
+        
+        channel.send(`Do you want me to create new 📒log?`)
+        
+        stored.yesAction = async() =>{
+            var newPage =  await notion.createNew( process.env.NOTION_DB_ID, style ,BUILD ); 
+            notion.datas.push(newPage)
+           // if( newPage.children.length > 0 ){await notion.spreadItem( newPage , 7 );}
+            
+            channel.send(`Here it is!`) 
+            var _newEmbed = newEmbed( {description :` [📒${style.Name}](${newPage.url}) `} )
+            channel.send({embeds : [_newEmbed] })
+        }
+    }catch(error){
+        channel.send("Something went wrong 👉",error.message)
     }
 
-    var style = { Name : mmdd(monday) , Group : 'Log', icon : '📙'}
-    style.Date = {start :getNotionDate(monday)  }
-    
-    channel.send(`Do you want me to create new 📒log?`)
-    
-    stored.yesAction = async() =>{
-        var newPage =  await notion.createNew( process.env.NOTION_DB_ID, style ,BUILD ); 
-        
-       // if( newPage.children.length > 0 ){await notion.spreadItem( newPage , 7 );}
-        
-        channel.send(`Here it is!`) 
-        var _newEmbed = newEmbed( {description :` [📒${mmdd(monday)}](${newPage.url}) `} )
-        channel.send({embeds : [_newEmbed] })
-    }
     
 }
 
@@ -274,6 +289,7 @@ export async function createReminder(entitie){
         
         // 1. add notion
         var page = await notion.createNew( process.env.NOTION_DB_ID , style ,null ); 
+        notion.datas.push(page)
         var cronTime = await page.properties['Cron Time'].formula.string ;
    
         // 2. set Cron
@@ -410,32 +426,36 @@ var witTimeToDate = _witTime =>{
 }
 
 export var TellMeAboutTasks = async (_entitie) =>{
-    var date = 'datetime' in _entitie ? witTimeToDate(_entitie.datetime) : new Date()
-    var day =  date.getDay();
-    day = day == 0 ? 6: day - 1;  //start of the week is monday
-
-    //var pages = await notion.datas.filter( data => notion.groupFilter(data, "Log") )
-    var worklog = await getTodaysWorklog();
-    var columns = await notion.getColumns( worklog ) ; 
-
-    Promise.resolve( getTasks(day,columns ) ).then( async ([allTodo, leftTodo] )=>{
-        var text = "" ; 
-        var _newEmbed = new MessageEmbed();
-        _newEmbed.setTitle (  "🌈 " + date.toDateString()  ); 
-        if("how_many" in _entitie){
-            text = "You have  " + leftTodo.length.toString() +"/" + allTodo.length.toString() +" tasks" ;
-        }
-        else{
-            stored.datas = await !"remain" in _entitie ? allTodo : leftTodo ;
-            text = await notion.blocks_to_text( stored.datas );  
-        }
-        text += lineChange += `[📙${worklog.properties.Name.title[0].plain_text}](${worklog.url})`
-        _newEmbed.setDescription( text ); 
-        channel.send({embeds : [_newEmbed] })
-        var nextColumn = columns[Math.min(day + 1, columns.length)]
-        askBusy( 10 ,leftTodo , nextColumn ); 
-    })
+    try{
+        var date = 'datetime' in _entitie ? witTimeToDate(_entitie.datetime) : new Date()
+        var day =  date.getDay();
+        day = day == 0 ? 6: day - 1;  //start of the week is monday
     
+        var worklog = await getTodaysWorklog();
+        var columns = await notion.getColumns( worklog ) ; 
+    
+        Promise.resolve( getTasks(day,columns ) ).then( async ([allTodo, leftTodo] )=>{
+            var text = "" ; 
+            var _newEmbed = new MessageEmbed();
+            _newEmbed.setTitle (  "🌈 " + date.toDateString()  ); 
+            if("how_many" in _entitie){
+                text = "You have  " + leftTodo.length.toString() +"/" + allTodo.length.toString() +" tasks" ;
+            }
+            else{
+                stored.datas = await !"remain" in _entitie ? allTodo : leftTodo ;
+                text = await notion.blocks_to_text( stored.datas );  
+            }
+            text += lineChange += `[📙${worklog.properties.Name.title[0].plain_text}](${worklog.url})`
+            _newEmbed.setDescription( text ); 
+            channel.send({embeds : [_newEmbed] })
+            var nextColumn = columns[Math.min(day + 1, columns.length)]
+            askBusy( 10 ,leftTodo , nextColumn ); 
+        })
+        
+    }catch(error){
+        channel.send("😧Something went wrong "+ error.message)
+    }
+
 
 }
 
@@ -444,7 +464,9 @@ var getTasks = async( day , columns ) =>{
     var TodaysColumn = columns[day]; 
     var allTodo = await notion.getChildren( TodaysColumn, {type:'to_do'} );
     allTodo = await allTodo.filter(b => b.to_do )
+    console.log( allTodo )
     var leftTodo = await allTodo.filter( b => !b.to_do.checked );
+    
     return [allTodo, leftTodo]; 
 }
 
@@ -460,7 +482,7 @@ export var TellMeAboutProject = async (_entitie)=>{
 
     
     var AllProjects = await notion.datas.filter( data => notion.groupFilter(data,"Project" ) )
-    var Now = timezone(new Date())
+    var Now = now(new Date()) //timezone(new Date())
     var Scheduled = AllProjects.filter( p => p.properties.Date.date != null && p.properties.Date.date.end != null )
     var Completed = Scheduled.filter( p => Now.getTime() >= notionDateToDate(p.properties.Date.date.end).getTime() )
     var Incompleted = Scheduled.filter( p => !Completed.includes(p));
@@ -481,7 +503,7 @@ export var TellMeAboutProject = async (_entitie)=>{
         var title = Project.properties.Name.title[0].plain_text; 
         var start = Project.properties.Date.date.start; 
         var end = Project.properties.Date.date.end; 
-        var Now = timezone(new Date())
+        var Now = now(new Date())
         var leftDays =  Math.floor( (notionDateToDate(end) - Now )/(1000 * 60 * 60 * 24) );
         leftDays = leftDays < 2 ? leftDays.toString() +" day" :leftDays.toString() +" days"
         
@@ -560,45 +582,56 @@ export async function getGIF(search_term){
 }
 
 export async function getRecipe(_keyword){
+
     var URL = 'https://tasty.co/search?q='+_keyword+'&sort=popular'
     var _selector ='.feed-item__img-wrapper';
 
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.goto(URL, {waitUntil: 'networkidle2'});
+    stored.moreAction = async ()=> {
 
-    var contents = await page.$$(_selector);
-    var random = contents[Math.floor(contents.length * Math.random())]
-    var alink = await random.getProperty('parentNode')
-    alink = await alink.getProperty("href");
-    alink =  alink._remoteObject.value
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        await page.goto(URL, {waitUntil: 'networkidle2'});
 
-    await page.goto( alink,{waitUntil: 'networkidle2'})
+        var contents = await page.$$(_selector);
+        var random = contents[Math.floor(contents.length * Math.random())]
+        var alink = await random.getProperty('parentNode')
+        alink = await alink.getProperty("href");
+        alink =  alink._remoteObject.value
 
-    const recipe = {};
+        await page.goto( alink,{waitUntil: 'networkidle2'})
 
-    recipe.ingredients = await page.$$eval('.ingredient', el => el.map( el=> el.textContent)  )
-    recipe.ingredients = Variable.arrayToString(recipe.ingredients)
-    
-    recipe.instruction = await page.$$eval('.xs-mb2', els =>  {
-        return els.filter( el => el.classList.length == 1 )
-            .map(el=> el.textContent)
-    })
-    recipe.instruction = recipe.instruction.slice(recipe.instruction.length/2)
-    recipe.instruction = Variable.arrayToString2(recipe.instruction)
+        const recipe = {};
 
-    recipe.thumbnail = await page.$eval('.video-js',el => el.getAttribute('poster') )
-    recipe.video = await page.$eval('source',el => el.src )    
-    await browser.close; 
+        recipe.ingredients = await page.$$eval('.ingredient', el => el.map( el=> el.textContent)  )
+        recipe.ingredients = Variable.arrayToString(recipe.ingredients)
+        
+        recipe.instruction = await page.$$eval('.xs-mb2', els =>  {
+            return els.filter( el => el.classList.length == 1 )
+                .map(el=> el.textContent)
+        })
+        recipe.instruction = recipe.instruction.slice(recipe.instruction.length/2)
+        recipe.instruction = Variable.arrayToString2(recipe.instruction)
 
-    // Send
-    var _embeded = new MessageEmbed().setTitle(` 👩‍🍳💘 Recipe of Love `)
-    _embeded.setImage( recipe.thumbnail ); 
-    _embeded.addFields( {name :"ingredients" , value : recipe.ingredients , inline:true  })
-    _embeded.addFields( {name :"instruction" , value : recipe.instruction  , inline:true })
-    channel.send({embeds : [_embeded] }) 
+        recipe.thumbnail = await page.$eval('.video-js',el => el.getAttribute('poster') )
+        recipe.video = await page.$eval('source',el => el.src )    
+        await browser.close; 
 
-    channel.send(recipe.video);
+        // Send
+        var _embeded = new MessageEmbed().setTitle(` 👩‍🍳💘 Recipe of Love `)
+        _embeded.setImage( recipe.thumbnail ); 
+        _embeded.addFields( {name :"ingredients" , value : recipe.ingredients , inline:true  })
+        _embeded.addFields( {name :"instruction" , value : recipe.instruction  , inline:true })
+        channel.send({embeds : [_embeded] }) 
+
+        channel.send(recipe.video);
+    }
+
+    try{
+        stored.moreAction();
+    }catch(error){
+        channel.send("Something went wrong with.. "+ error.message)
+    }
+
 }
 
 export async function TellMeAboutSocialStat(_entitie){
@@ -634,7 +667,7 @@ export async function getTodaysWorklog(){
         var worklogs = await notion.datas.filter( data => notion.groupFilter(data,"Log" ) )
         var start = notionDateToDate(worklogs[0].properties.Date.date.start);
         var end = notionDateToDate(worklogs[0].properties.Date.date.end);
-        var Now = timezone(new Date());
+        var Now = now(new Date());
         
         if( Now.getTime() <= end.getTime() && Now.getTime() >= start.getTime()   ){
             resolve(worklogs[0]);
@@ -652,7 +685,8 @@ export async function botIn(){
     
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
     reminders = await reminders.filter(data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
-    //initCrons(reminders);    
+    //initCrons(reminders);   
+    //userIn(); 
 }
 
 
@@ -672,31 +706,41 @@ export async function userIn(){
     await getWeather( _embeded , 'Vancouver, BC');
 
     // 1. todo 
-    var day = new Date().getDay()
-    day = day == 0 ? 6: day - 1; 
-    var pages = await notion.datas.filter( data => notion.groupFilter(data,"Log" ) )
 
-    var columns = await notion.getColumns( pages[0] ) ; 
-    Promise.resolve( getTasks(day, columns ) ).then( async ( [ allTodo , leftTodo ] ) =>{
+    try{
+        var worklog = await getTodaysWorklog(); 
+        var columns = await notion.getColumns( worklog ) ; //page
+        var day = new Date().getDay()
+        day = day == 0 ? 6: day - 1; 
+        Promise.resolve( getTasks(day, columns ) ).then( async (  [allTodo , leftTodo]  ) =>{
+    
+            var todos = await notion.blocks_to_text(allTodo);     
+            _embeded.addFields({name : "Tasks", value : todos})
+            _embeded.addFields({name : "Count", value : `${allTodo.length-leftTodo.length}/${allTodo.length}`})
+        
+            // 9. send
+            channel.send({embeds : [_embeded] }) 
+        
+            // 9. if task is too many
+            var nextColumn = columns[Math.min(day + 1, columns.length)]
+            askBusy(10, leftTodo , nextColumn ); 
+    
+            if( allTodo.length-leftTodo.length < 5 ){
+                var TASKS_URL = "https://www.notion.so/happpingmin/30ddc8bbffcc481cb702da35789f3cf5?v=f6894f5cc1d246a0b49179d270748e2e"
+                channel.send(`You seems like free, check out [Tasks Page](${TASKS_URL})`)
+            }
+            })
+    
 
-        var todos = await notion.blocks_to_text(allTodo);     
-        _embeded.addFields({name : "Tasks", value : todos})
-        _embeded.addFields({name : "Count", value : `${allTodo.length-leftTodo.length}/${allTodo.length}`})
-    
-        // 9. send
-        channel.send({embeds : [_embeded] }) 
-    
-        // 9. if task is too many
-        var nextColumn = columns[Math.min(day + 1, columns.length)]
-        askBusy(10, leftTodo , nextColumn ); 
-    })
-    if( allTodo.length-leftTodo.length < 5 ){
-        var TASKS_URL = "https://www.notion.so/happpingmin/30ddc8bbffcc481cb702da35789f3cf5?v=f6894f5cc1d246a0b49179d270748e2e"
-        channel.send(`You seems like free, check out [Tasks Page](${TASKS_URL})`)
+    }catch(error){
+        channel.send("Something went wrong "+ error.message)
     }
-    if( 1 == new Date().getDay ){
-        channel.send("Do you want me to create new log?")
-    }
+
+  
+
+
+
+
 }
 
 export async function userOut(){
@@ -727,4 +771,9 @@ Do you want me to move some tasks to tmr?`];
     }
 }
 
-
+/*
+new CronJob("* * * * *",cron=>{
+    console.log( "test" )
+    console.log( this )
+}).start()
+*/
