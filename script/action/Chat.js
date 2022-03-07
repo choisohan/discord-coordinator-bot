@@ -5,7 +5,8 @@ var bot = {}; //this will reset whenever the script reinitiates
 
 
 export async function send( mm ){
-    if(mm == 'clear'){Action.clearChannel()}
+    if(mm.split(" ")[0] == 'clear'){Action.clearChannel()}
+    if(mm.split(" ")[0] == 'translate'){Action.translate()}
     else{
     Wit.client.message(mm).then( async ( {entities, intents, traits} ) => { 
   

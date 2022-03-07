@@ -1,4 +1,4 @@
-import Discord, { Client, Intents, Collection } from "discord.js";
+import Discord, { Intents, Collection } from "discord.js";
 import 'dotenv/config' 
 //import { botIn } from "../action/Actions.js";
 import { SlashCommandBuilder } from '@discordjs/builders'
@@ -6,7 +6,6 @@ import { REST } from "@discordjs/rest";
 import { Routes } from 'discord-api-types/v9'
 import * as Chat from '../action/Chat.js'
 
-//export var discord = new Discord.Client({intents:["GUILDS","GUILD_MESSAGES"]});
 export var discord = new Discord.Client(
     {intents:[Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES ,Intents.FLAGS.GUILD_MESSAGE_REACTIONS],
     partials: ['MESSAGE', 'CHANNEL', 'REACTION'],});

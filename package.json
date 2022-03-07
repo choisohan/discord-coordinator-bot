@@ -13,6 +13,7 @@
   "description": "",
   "dependencies": {
     "@discordjs/rest": "^0.3.0",
+    "@google-cloud/translate": "^6.3.1",
     "@notionhq/client": "^0.4.13",
     "axios": "^0.26.0",
     "cron": "^1.8.2",

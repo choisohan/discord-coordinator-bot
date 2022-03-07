@@ -1,4 +1,4 @@
-import { discord , channel} from './script/handlers/discord-handler.js'
+import { discord} from './script/handlers/discord-handler.js'
 import * as Chat from './script/action/Chat.js'
 
 
@@ -10,22 +10,12 @@ discord.on("interactionCreate", async interaction=>{
 })
 */ 
 
-
-
 discord.on("messageCreate", async msg =>{
   if(!msg.author.bot){
-    if(!msg.attachments.size){
-      Chat.send( msg.content.substring() ); 
-    }
-    else{
-    }
-
+    if(!msg.attachments.size){Chat.send( msg.content.substring() );}
   }
 })
 
-
-discord.on("messageReactionAdd", async reaction =>{
-  Chat.emojiReaction(reaction)
-})
+discord.on("messageReactionAdd", async reaction =>{Chat.emojiReaction(reaction)})
 
 
