@@ -17,11 +17,19 @@
   },
   {
     "entities" :["yes"], "intents" : ["respond"] , "traits" :{} ,
-    "script" : ["Action.respondYes()"] 
+    "script" : ["Action.respondYes(entities)"] 
   },
   {
     "entities" :["no"], "intents" : ["respond"] , "traits" :{} ,
-    "script" : ["Action.respondNo()"] 
+    "script" : ["Action.respondNo(entities)"] 
+  },
+  {
+    "entities" :["more"], "intents" : ["request"] , "traits" :{} ,
+    "script" : ["Action.requestMore(entities)"] 
+  },
+  {
+    "entities" :["stop"], "intents" : ["request"] , "traits" :{} ,
+    "script" : ["Action.requestStop(entities)"] 
   },
   {
     "entities" :["reminder"], "intents" : ["request_notion_write"] , "traits" :{} ,
@@ -54,8 +62,23 @@
   {
     "entities" :[], "intents" : ["request_SNS_read"] , "traits" :{} ,
     "script": ["Action.TellMeAboutSocialStat(entities)"]
+  },
+  {
+    "entities" :["translate"], "intents" : ["request"] , "traits" :{} ,
+    "script": ["Action.translate(mm)"]
+  },
+  {
+    "entities" :["move","left","task"], "intents" : ["request_notion_write"] , "traits" :{} ,
+    "script": ["Action.fromLogToTasks()"]
+  },
+  {
+    "entities" :["move","more","task","log"], "intents" : ["request_notion_write"] , "traits" :{} ,
+    "script": ["Action.inspectOldTasks(entities)"]
+  },
+  {
+    "entities" :["create","task","agenda_entry"], "intents" : ["request_notion_write"] , "traits" :{} ,
+    "script": ["Action.createNewTask(entities.agenda_entry)"]
   }
-
 
  
 ]

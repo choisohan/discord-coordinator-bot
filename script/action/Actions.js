@@ -10,30 +10,119 @@ import moment from 'moment';
 import pkg from 'puppeteer';
 import * as Variable from '../extra/compare.js';
 
+var timezone = ( DATE ) =>{return new Date(DATE.toLocaleDateString('en-US',{timeZone : process.env.TIMEZONE }))}
 const  puppeteer  = pkg;
-
-
 var stored = []; 
-
 var getNotionDate = _date=>{ return _date.toISOString().split('T')[0] }
 
-/*
-export var MoveTodaysLeftTask = async()=>{
-    var pages = await notion.getPages( notion.databases["Worklog"] );
-    var columns = await notion.getColumns( pages[0].id );
-    var today = new Date().getDay() -1 ; 
-    var TodaysColumn = columns[today];
-    var blocks = await notion.getChildren( TodaysColumn.id, {type:'to_do'} );
-    blocks = blocks.filter( b => !b.to_do.checked )
+export async function createNewTask( _name ){
+    try{
+        var style ={ Name : _name, Group: "Task" }
+        var newPage = await notion.createNew(process.env.NOTION_DB_ID, style, null); 
+        var _newEmbed = new MessageEmbed();
+        _newEmbed.setDescription(`✨The new tasks [${_name}](${newPage.url})`)
+        channel.send({embeds : [_newEmbed] })
+        return task; 
+    }catch(error){
+        console.log(error )
+        channel.send("Something went wrong " + error.message)
+    }
 
-    blocks.forEach( async b =>{
-        await notion.createNew( notion.databases["Tasks"] , {Name: b.to_do.text[0].plain_text} , null )
-        await notion.deleteItem(b.id)
-    })
-    var text = "I just moved today's left tasks to [Tasks]" 
-    channel.send(text)
 }
-*/
+
+//inspectMode
+export async function inspectOldTasks(_entitie){
+
+        var worklog = await getTodaysWorklog();
+        var columns = await notion.getColumns( worklog );
+        var today = timezone( new Date() ).getDay() - 1 ; 
+
+        var tasks = notion.datas.filter( data => notion.groupFilter(data, "Task") )
+        tasks = tasks.reverse();
+    
+        var items = []; 
+        //var deleteItems = []; 
+
+        
+        stored.numb = 0 ; 
+        var ask = () => {
+            stored.numb+= 1; 
+            var _name = tasks[stored.numb].properties.Name.title[0].plain_text;
+            channel.send( 'How about doing "' + _name + '"?' );
+        }
+        
+        ask(); 
+
+        stored.moreAction = _entitie =>{
+            channel.send(" - ");
+            ask();
+        }
+
+        stored.noAction = _entitie =>{
+            ask();
+        }
+        
+        stored.yesAction = async _entitie =>{
+            if( ["perfect","that","awesome"].includes( _entitie.yes.substring() ) ){
+                // 0. Add new blocks
+                var names = items.map( item => item.Name.title[0].plain_text )
+                var blocks = names.map( item =>{return {
+                    object:'block',
+                    type : 'to_do',
+                    to_do : {text :[{type : 'text', text : {content: item }} ]  }
+                }})
+                await notion.appendChild( columns.at(today) , blocks  );    
+                // 1. Remove original blocks
+                items.forEach(item=>{
+                    deleteItem(item.id)
+                })
+
+                // 2. send message
+                var _embed = new MessageEmbed();
+                _embed.setDescription(  Variable.arrayToString2(names) );
+                channel.send({embeds : [_embed] })
+                channel.send(`I just moved ${items.length} tasks to your [${worklog.properties.Name.title[0].plain_text}](${worklog.url})`)
+            }
+            else{
+                channel.send(" + ");
+                ask();
+                items.push( tasks[stored.numb] ); //add
+            }
+        }
+}
+
+
+export async function fromLogToTasks(){
+    try{
+        var worklog = await getTodaysWorklog();
+        var columns = await notion.getColumns( worklog );
+        var today = timezone( new Date() ).getDay() - 1 ; 
+        var TodaysColumn = columns[today];
+        var blocks = await notion.getChildren( TodaysColumn.id, {type:'to_do'} );
+        blocks = blocks.filter( b => !b.to_do.checked )
+    
+        blocks.forEach( async b =>{
+            var style =  { Name: b.to_do.text[0].plain_text ,Group:"Task"}
+            await notion.createNew( process.env.NOTION_DB_ID , style , null )
+            await notion.deleteItem(b.id)
+        })
+        var text = "I just moved today's left tasks to [Tasks]" 
+        channel.send(text)
+
+    }catch(err){
+        channel.send("Something went wrong with fromLogToTasks():" + err.message)
+    }
+
+}
+
+
+
+export async function translate(){
+
+
+}
+
+
 
 export var CreateNewLog = async () =>{
 
@@ -52,7 +141,7 @@ export var CreateNewLog = async () =>{
     
     channel.send(`Do you want me to create new 📒log?`)
     
-    stored.action = async() =>{
+    stored.yesAction = async() =>{
         var newPage =  await notion.createNew( process.env.NOTION_DB_ID, style ,BUILD ); 
         
        // if( newPage.children.length > 0 ){await notion.spreadItem( newPage , 7 );}
@@ -120,7 +209,7 @@ export async function initCrons( pages ){
                 try{
                     eval(scripts[Math.floor( scripts.length * Math.random() )]  )
                 }catch(error){
-                    console.log( channel.send("⚠️" + reminder.Name.title[0].plain_text +" : "+ error.message) )
+                    console.log( channel.send("🤷🏽‍♀️ Something went wrong. "+ reminder.Name.title[0].plain_text +" : "+ error.message) )
                 }                             
             }     
         }, null, null , process.env.TIMEZONE);
@@ -129,17 +218,30 @@ export async function initCrons( pages ){
     })
 }
 
-export async function respondYes( ){
-    if(stored.action){
-        stored.action(); 
-        stored = {}
+export async function respondYes(_entitie){
+    if(stored.yesAction){
+        stored.yesAction(_entitie);
+    }else{
+        channel.send("Sorry, I fell asleep. What do you want?")
     }
 }
-export async function respondNo( ){
-    if(stored.action){
-        stored = {}
+export async function respondNo(_entitie){
+    if(stored.noAction){
+        stored.noAction(_entitie); 
+    }else{
         channel.send("No problem!👍")
     }
+}
+// Repeating Action
+export async function requestMore(_entitie){
+    if(stored.moreAction){
+        stored.moreAction(_entitie);
+    }
+}
+
+export async function requestStop(_entitie){
+    channel.send("No problem!")
+    stored = {}
 }
 
 export async function createReminder(entitie){
@@ -168,7 +270,7 @@ export async function createReminder(entitie){
     channel.send("Want me to create like this?")
 
 
-    stored.action = async() =>{
+    stored.yesAction = async() =>{
         
         // 1. add notion
         var page = await notion.createNew( process.env.NOTION_DB_ID , style ,null ); 
@@ -223,7 +325,7 @@ export var deleteSelected = async ( _entities ) =>{
 
     else{
         channel.send("I can delete if you want!")
-        stored.action = async () =>{
+        stored.yesAction = async () =>{
             var numbers = _entities['number']
             numbers = numbers.map( numb => numb.value )
             for (var i = 0; i < numbers.length ; i ++  ){
@@ -281,7 +383,7 @@ export var tweetThat = async ()=>{
         
 
         // 3. Post Tweet
-        stored.action = () =>{
+        stored.yesAction = () =>{
             tweet( textBody, mediaURLs )
         }
 
@@ -312,8 +414,9 @@ export var TellMeAboutTasks = async (_entitie) =>{
     var day =  date.getDay();
     day = day == 0 ? 6: day - 1;  //start of the week is monday
 
-    var pages = await notion.datas.filter( data => notion.groupFilter(data, "Log") )
-    var columns = await notion.getColumns( pages[0] ) ; 
+    //var pages = await notion.datas.filter( data => notion.groupFilter(data, "Log") )
+    var worklog = await getTodaysWorklog();
+    var columns = await notion.getColumns( worklog ) ; 
 
     Promise.resolve( getTasks(day,columns ) ).then( async ([allTodo, leftTodo] )=>{
         var text = "" ; 
@@ -326,12 +429,13 @@ export var TellMeAboutTasks = async (_entitie) =>{
             stored.datas = await !"remain" in _entitie ? allTodo : leftTodo ;
             text = await notion.blocks_to_text( stored.datas );  
         }
-        text += lineChange += `[📙${pages[0].properties.Name.title[0].plain_text}](${pages[0].url})`
+        text += lineChange += `[📙${worklog.properties.Name.title[0].plain_text}](${worklog.url})`
         _newEmbed.setDescription( text ); 
         channel.send({embeds : [_newEmbed] })
         var nextColumn = columns[Math.min(day + 1, columns.length)]
         askBusy( 10 ,leftTodo , nextColumn ); 
     })
+    
 
 }
 
@@ -354,10 +458,9 @@ var notionDateToDate = (stringDate) =>{
 
 export var TellMeAboutProject = async (_entitie)=>{
 
-    var Now = new Date(); 
     
     var AllProjects = await notion.datas.filter( data => notion.groupFilter(data,"Project" ) )
-
+    var Now = timezone(new Date())
     var Scheduled = AllProjects.filter( p => p.properties.Date.date != null && p.properties.Date.date.end != null )
     var Completed = Scheduled.filter( p => Now.getTime() >= notionDateToDate(p.properties.Date.date.end).getTime() )
     var Incompleted = Scheduled.filter( p => !Completed.includes(p));
@@ -378,7 +481,8 @@ export var TellMeAboutProject = async (_entitie)=>{
         var title = Project.properties.Name.title[0].plain_text; 
         var start = Project.properties.Date.date.start; 
         var end = Project.properties.Date.date.end; 
-        var leftDays =  Math.floor( (notionDateToDate(end) - Now)/(1000 * 60 * 60 * 24) );
+        var Now = timezone(new Date())
+        var leftDays =  Math.floor( (notionDateToDate(end) - Now )/(1000 * 60 * 60 * 24) );
         leftDays = leftDays < 2 ? leftDays.toString() +" day" :leftDays.toString() +" days"
         
         var _embeded = new MessageEmbed()
@@ -525,6 +629,22 @@ export async function TellMeAboutSocialStat(_entitie){
 }
 
 
+export async function getTodaysWorklog(){
+    return new Promise(async (resolve,error)=>{
+        var worklogs = await notion.datas.filter( data => notion.groupFilter(data,"Log" ) )
+        var start = notionDateToDate(worklogs[0].properties.Date.date.start);
+        var end = notionDateToDate(worklogs[0].properties.Date.date.end);
+        var Now = timezone(new Date());
+        
+        if( Now.getTime() <= end.getTime() && Now.getTime() >= start.getTime()   ){
+            resolve(worklogs[0]);
+        }
+        else{
+            channel.send("There are no worklog for this week."); 
+            CreateNewLog(); 
+        }
+    })
+}
 
 export async function botIn(){
     console.log("bot in ")
@@ -533,8 +653,10 @@ export async function botIn(){
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
     reminders = await reminders.filter(data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
     //initCrons(reminders);    
-
 }
+
+
+
 export async function userIn(){
     var messages = ['Hello!','You came back!',"Hey Darling!"];  
     channel.send( messages[Math.floor( Math.random() * messages.length )]);
@@ -592,10 +714,15 @@ async function askBusy( _maxCount , tasks , moveGoal ){
 Do you want me to move some tasks to tmr?`];
         var leftArr = tasks.slice(_maxCount) ;
         channel.send( messages[Math.floor( messages.length * Math.random() )] )
-        stored.action = async() =>{
+        stored.yesAction = async() =>{
             leftArr.forEach(async task =>{
-                await notion.parent( task, moveGoal )
+                try{
+                    await notion.parent( task, moveGoal )
+                }catch(error){
+                    channel.send("🤷🏽‍♀️ Something went wrong. " ,error.message)
+                }
             })
+            channel.send('Yay! You have less tasks for today now!')
         }
     }
 }

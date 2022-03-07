@@ -1,10 +1,7 @@
 import 'dotenv/config' 
 import { Client } from '@notionhq/client'
-import { monday,mmdd } from '../extra/scheduler.js';
-import { discord , channel } from './discord-handler.js'
-import { CronJob } from 'cron';
-import { ApplicationCommandPermissionType } from 'discord-api-types/v9';
-import { allisIn ,chunk } from '../extra/compare.js';
+import {  channel } from './discord-handler.js'
+import { chunk } from '../extra/compare.js';
 import { botIn } from '../action/Actions.js';
 var NOTION; var BLOCKS = [] ; 
 
@@ -18,6 +15,14 @@ class notionClient{
             }
         )
 
+    }
+
+    async appendChild( parent , children ){
+        console.log(  children )
+        await NOTION.blocks.children.append({
+            block_id: parent.id ,
+            children : children
+        }); 
     }
 
     async getPages( database_ID ) {
@@ -176,16 +181,12 @@ class notionClient{
         await NOTION.blocks.delete({block_id: block_ID});
     }
 
-    /*
+    
     async spreadItem( page , _maxcount ){
         // get all chldren
         var children = await this.getChildren( page ); 
-
         children = children.filter( child => !["column","column_list"].includes(child.type) )
-        //console.log( children.length)
         var Chunks = chunk( children, _maxcount);
-        console.log("✨💫💫✨", children , Chunks )
-
 
         // get columns
         var columns = await this.getColumns( page ); 
@@ -201,7 +202,7 @@ class notionClient{
             }
         }
     }
-    */
+    
 
     async parent( block , goalParent ){
         console.log("👼")
@@ -242,7 +243,6 @@ var duplicatedBlock = (block) => {
     var object =  {object: 'block' }
     object.type = block.type
     object[block.type] = {text: Text,checked: false}
-    console.log( "🍈 ",object.to_do.text.length , object.to_do.text[0] )
     return object
 }
 var PropertyHQ = ( _type, _value ) =>{
