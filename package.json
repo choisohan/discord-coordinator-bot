@@ -26,6 +26,7 @@
     "node-wit": "^6.0.1",
     "nodemon": "^2.0.15",
     "puppeteer": "^13.4.1",
+    "rollbar": "^2.24.0",
     "twitter-api-v2": "^1.11.0",
     "unfluff": "^3.2.0",
     "weather-js": "^2.0.0",

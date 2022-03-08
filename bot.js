@@ -1,6 +1,13 @@
 import { discord} from './script/handlers/discord-handler.js'
+import Rollbar from 'rollbar';
 import * as Chat from './script/action/Chat.js'
 
+var rollbar = new Rollbar({
+  accessToken: process.env.ROLLBAR,
+  captureUncaught: true,
+  captureUnhandledRejections: true
+});
+rollbar.log("Hello world!");
 
 // Slash Command
 /*
