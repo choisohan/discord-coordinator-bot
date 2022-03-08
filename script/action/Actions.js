@@ -9,6 +9,8 @@ import moment from 'moment';
 import pkg from 'puppeteer';
 import * as Variable from '../extra/util.js';
 import axios from 'axios';
+import extractor from 'unfluff'
+
 moment.locale('en-ca')
 
 const  puppeteer  = pkg;
@@ -699,7 +701,8 @@ export async function botIn(){
     reminders = await reminders.filter(data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
     initCrons(reminders);  
     //SearchGoogle('what is javascript');
-    ReadThisSlowly('https://dev.to/devteam/introducing-the-forem-shop-new-merch-giveaways-and-more-4kff');   
+    //ReadSlowly('https://en.wikipedia.org/wiki/Hartebeest')
+
 }
 
 
@@ -835,8 +838,8 @@ export async function SearchDictionary( mm, entitie , traits ){
         else if( mm.includes('recipe') ){
             Action.getRecipe('healthy')
         }
-        else if( Object.keys(entitie).includes('url') ){
-            ReadThisSlowly(entitie.url); 
+        else if( Object.keys(entitie).includes('url') || Variable.isValidHttpUrl(mm) ){
+            ReadSlowly(entitie.url); 
         }
         else{
             SearchGoogle(mm);
@@ -880,49 +883,38 @@ export async function SearchGoogle(mm){
     }
 }
 
-export async function ReadThisSlowly(URL){
-    //channel.send( "Want me to read for you?" )
-    console.log('ReadThisSlowly')
+export async function ReadSlowly(URL){
+    var data = await axios.get(URL).then( res => {
+        return extractor.lazy(res.data) 
+    })
+    var texts = data.text().split(lineChange).filter( t => t!= '').map(t => t.split('.'))
+    var ArticleBody = []
+    texts.forEach( text =>{text.forEach(t => ArticleBody.push(t))})
 
     
-    /*
-    //Method 1 
-    await fetch(URL)
-    .then(async function( data) {
-        //console.log(await data.json());
-    })
-    */
-
-
-    //Method 2
-    /*
-    await axios.get(URL).then( res => {
-
-    })
-    */ 
-
-
-
-/*
+    if(ArticleBody.length >  0 ){
     
-    //Method 3 
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.goto(URL, {waitUntil: 'networkidle2'});
+        if( data.image()){
+            channel.send(data.image())
+        }
+
+        var i = 0; 
+        stored.yesAction = () =>{
+            channel.send(ArticleBody[i])
+            i += 1;
+            if( i == ArticleBody.length){
+                channel.send("Article is finished")
+                stored.yesAction =null; 
+            }
+        }
+        stored.yesAction()
     
-    await page.$eval('body',el=>{
-        console.log(el.textContent)
-    })
+    }
+    else{
+        channel.send("hm... I can't fetch article body")
+    }
+    
 
-    const body = await page.evaluate(()=>{
-        return document.getElementsByTagName("body")[0].textContent
-
-    })
-    console.log( body )
-
-    await page.screenshot({ path: 'temp/tmp.png' })//, fullPage: true });
-    await browser.close; 
-    */
-
+    
 
 }

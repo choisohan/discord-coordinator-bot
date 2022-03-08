@@ -62,58 +62,15 @@ export function arrayToString2( arr ){
     return string 
 }
 
-//https://stackoverflow.com/questions/8635502/how-do-i-clear-all-intervals
-/*
-var intervals = {
-    Sets : new Set(),
-    add(...args){
-        var newInterval = setInterval(...args);
-        this.Sets.add(newInterval);
-        return newInterval;
-    },
-    delete( id ){
-        this.Sets.delete(id);
-        return clearInterval(id);
-    },
-    deleteAll(){
-        for (var id of this.Sets) {
-            this.clear(id);
-        }
+function isValidHttpUrl(string) {
+    let url;
+    
+    try {
+      url = new URL(string);
+    } catch (_) {
+      return false;  
     }
+  
+    return url.protocol === "http:" || url.protocol === "https:";
+  }
 
-} 
-*/ 
-/*
-
-intervals.add(()=>{console.log("test1")},100000)
-intervals.add(()=>{console.log("test2")},200000)
-var item = intervals.add(()=>{console.log("test3")},300000)
-
-console.log( Array.from(intervals.Sets).length )
-
-intervals.delete( Array.from(intervals.Sets)[0] )
-
-console.log( Array.from(intervals.Sets).length )
-
-intervals.delete( item )
-
-console.log( Array.from(intervals.Sets).length )
-*/ 
-
-/*
-var intervals = {Sets: new Set()}
-
-
-console.log( intervals.Sets )
-*/
-
-/*
-var intervals = [];
-intervals.push ( setInterval(()=>{console.log('test')}, 1000) ) ;
-console.log( intervals.length)
-
-setTimeout(()=>{
-    console.log("timeout!")
-    clearInterval(intervals[0]); 
-},5000)
-*/ 

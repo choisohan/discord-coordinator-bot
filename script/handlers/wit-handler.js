@@ -89,12 +89,13 @@ export const findIntention = async ( entities, intents, traits  ) =>{
             // fin 
             var result = !([entitieIn, intentIn, traitKeyIn, traitValIn ].includes(false));
             if ( result ){ 
-                findDB = db; 
+                resolve(db);
+                //findDB = db; 
                 break;
             }
             else{  i += 1; }
             
-            resolve(findDB);
+            
 
         }
 

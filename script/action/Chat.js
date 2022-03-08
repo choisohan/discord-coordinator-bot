@@ -19,27 +19,17 @@ export async function send( mm ){
       var intents = Wit.intentFilter(intents); 
       var traits = Wit.traitFilter(traits); 
       console.log( "🏰",entities )
-      console.log("🐸".intents )
+      console.log("🐸",intents )
       console.log("🎁", traits )
 
       var findDB =  await Wit.findIntention( entities, intents, traits) ; 
-
-      if(findDB){
-        
-        if('message' in findDB ){
-          var rand_message = findDB.message[ Math.floor(findDB.message.length * Math.random()) ] ;
-          channel.send(rand_message) ; // send random message from the list
-        }
-        if('script' in findDB ){eval( await findDB.script[0] )}
-        
+      if('message' in findDB ){
+        var rand_message = findDB.message[ Math.floor(findDB.message.length * Math.random()) ] ;
+        channel.send(rand_message) ; // send random message from the list
       }
-      else{
-        Action.SearchDictionary( mm , entities, traits )
+      if('script' in findDB ){eval( await findDB.script[0] )}
       }
-      })
-
-      
-     
+      )
     }
   }
 

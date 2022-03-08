@@ -78,6 +78,11 @@
   {
     "entities" :["create","task","agenda_entry"], "intents" : ["request_notion_write"] , "traits" :{} ,
     "script": ["Action.createNewTask(entities.agenda_entry)"]
+  },
+  {
+    "entities" :[], "intents" : [] , "traits" :{} ,
+    "script": ["Action.SearchDictionary(mm, entities , traits)"]
   }
+  
  
 ]
