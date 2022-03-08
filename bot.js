@@ -12,7 +12,7 @@ discord.on("interactionCreate", async interaction=>{
 
 discord.on("messageCreate", async msg =>{
   if(!msg.author.bot){
-    if(!msg.attachments.size){Chat.send( msg.content.substring() );}
+    if(!msg.attachments.size){Chat.send( msg.content.toLowerCase() );}
   }
 })
 

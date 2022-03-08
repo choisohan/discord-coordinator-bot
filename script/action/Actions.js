@@ -1,17 +1,18 @@
 import 'dotenv/config'
 import { notion } from "../handlers/notion-handler.js";
-import { channel,discord,newEmbed } from "../handlers/discord-handler.js";
+import { channel, newEmbed } from "../handlers/discord-handler.js";
 import { CronJob } from 'cron'
 import { tweet } from "../handlers/twitter-handler.js";
 import  weather from 'weather-js';
 import { MessageEmbed } from 'discord.js';
 import moment from 'moment';
 import pkg from 'puppeteer';
-import * as Variable from '../extra/compare.js';
+import * as Variable from '../extra/util.js';
+import axios from 'axios';
 moment.locale('en-ca')
 
 const  puppeteer  = pkg;
-var stored = {}; 
+var stored = {}; var allCrons =[]; var intervals = []; 
 
 var now = (DATE) => moment(DATE) 
 var monday  = (DATE) =>  moment().subtract( DATE.getDay()-1,  'days')
@@ -21,6 +22,7 @@ var mmdd = (MOMENT) =>{
     var week = MOMENT.format('L').split('-');
     return week[1] + week[2]
 }
+
 
 export async function createNewTask( _name ){
     try{
@@ -107,7 +109,7 @@ export async function fromLogToTasks(){
         var columns = await notion.getColumns( worklog );
        var today = getDayMondayStart(now(new Date));
         var TodaysColumn = columns[today];
-        var blocks = await notion.getChildren( TodaysColumn.id, {type:'to_do'} );
+        var blocks = await notion.getChildren( TodaysColumn, {type:'to_do'} );
         blocks = blocks.filter( b => !b.to_do.checked )
     
         blocks.forEach( async b =>{
@@ -189,7 +191,7 @@ var getCalendar = (wit_datetime ) =>{
     })[0];
 }
 
-var allCrons =[];
+
 export async function initCrons( pages ){
     pages = pages.filter( d => d.properties.Unit.select == null || ['minute','hour','day'].includes(d.properties.Unit.select.name)    )
 
@@ -213,14 +215,18 @@ export async function initCrons( pages ){
         var cronTime = reminder.properties['Cron Time'].formula.string;
         var name = reminder.properties['Name'].title[0].plain_text 
         var cron = new CronJob( cronTime , ()=>{
-            if( messages.length > 0 ){
-                sendAlarm( messages[ Math.floor( messages.length * Math.random() )] )
+            var message = messages.length > 0 ? messages[ Math.floor( messages.length * Math.random() )]  :  "it's time for "+ name +" ✨"
+           var sendMessage = channel.send( message )
+           intervals.push(setInterval(sendMessage, 3000 ))
+
+            stored.yesAction = () =>{
+                channel.send("Good Job!");
+                //clearInterval(interval);
+
             }
-            else{
-                sendAlarm( "it's time for "+ name +" ✨");
-            }
+            
+
             if( scripts.length > 0 ){
-                
                 try{
                     eval(scripts[Math.floor( scripts.length * Math.random() )]  )
                 }catch(error){
@@ -234,10 +240,17 @@ export async function initCrons( pages ){
 }
 
 export async function respondYes(_entitie){
-    if(stored.yesAction){
+    if( stored.yesAction ){
         stored.yesAction(_entitie);
-    }else{
+    }
+    else{
         channel.send("Sorry, I fell asleep. What do you want?")
+    }
+    if( intervals.length > 0 ){
+        for ( var INTER in intervals){
+            clearInterval(INTER);
+            intervals= [];
+        }
     }
 }
 export async function respondNo(_entitie){
@@ -293,16 +306,17 @@ export async function createReminder(entitie){
         var cronTime = await page.properties['Cron Time'].formula.string ;
    
         // 2. set Cron
-        var newCron = new CronJob(cronTime ,()=>{ sendAlarm( _agenda ) },null, null , process.env.TIMEZONE);
+        var newCron = new CronJob(cronTime ,()=>{
+            channel.send( _agenda )
+        },null, null , process.env.TIMEZONE);
         allCrons.push(newCron);
         newCron.start();
 
         channel.send("I added a new reminder for you!")
             
     }
-
-
 }
+
 
 export var tellMeAboutReminders = async () =>{
     // 1. get
@@ -356,7 +370,6 @@ export var deleteSelected = async ( _entities ) =>{
     
 }
 
-var sendAlarm = ( message ) =>{channel.send( message );}
 
 var lineChange = `
 `
@@ -571,11 +584,12 @@ export async function TellMeAboutLocation(_entitie){
 
 export async function getGIF(search_term){
     return new Promise(async (resolve, err)=>{
-        var url = `http://api.giphy.com/v1/gifs/search?q=${search_term}&api_key=${process.env.GIPHY_KEY}&limit=5`
+        var url = `http://api.giphy.com/v1/gifs/search?q=${search_term}&api_key=${process.env.GIPHY_KEY}&limit=10`
         fetch(url)
             .then( response =>response.json())
             .then(content => {
-                var imgURL = content.data[0].images.downsized.url;
+                var rand = Math.floor(content.data.length * Math.random())
+                var imgURL = content.data[rand].images.downsized.url;
                 resolve(imgURL)
         })
     })
@@ -680,13 +694,12 @@ export async function getTodaysWorklog(){
 }
 
 export async function botIn(){
-    console.log("bot in ")
     // When a bot initiate, all the reminder except daily event starts.
-    
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
     reminders = await reminders.filter(data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
-    //initCrons(reminders);   
-    //userIn(); 
+    initCrons(reminders);  
+    //SearchGoogle('what is javascript');
+    ReadThisSlowly('https://dev.to/devteam/introducing-the-forem-shop-new-merch-giveaways-and-more-4kff');   
 }
 
 
@@ -771,9 +784,133 @@ Do you want me to move some tasks to tmr?`];
     }
 }
 
-/*
-new CronJob("* * * * *",cron=>{
-    console.log( "test" )
-    console.log( this )
-}).start()
-*/
+export async function SearchDictionary( mm, entitie , traits ){
+    try{
+        var myDictionaries = await notion.datas.filter( data => notion.groupFilter(data,"Dictionary" ) )
+        var myDictionary = myDictionaries[0]
+    
+        var Headers = await notion.getChildren( myDictionary );
+        Headers = Headers.filter( header => header[header.type].text.length > 0 && header.has_children )
+        //Headers = Headers.map( header => {return {[header[header.type].text[0].plain_text.split(" ")]:header}} )
+    
+        var search_keys = Object.keys(entitie).map( text => text.toLowerCase() );
+        var search_keywords = Object.values(entitie).map( text => text.toLowerCase() )
+        
+        Headers =  Headers.filter( header =>{
+            var header_keywords = header[header.type].text[0].plain_text.split(" ").map( text => text.toLowerCase() );
+            return Variable.anyisIn(search_keywords , header_keywords ); 
+        })
+    
+        if( Headers.length > 0 ){
+            // 0. get random item
+            var header = Headers[Math.floor( Headers.length * Math.random() )]
+            var children = await notion.getChildren( header );
+            // 1. get random children
+            var ChildBlock = children[Math.floor( children.length * Math.random() )]
+            var textElements = Object.values(ChildBlock[ChildBlock.type])[0]
+            
+            textElements = textElements.map( text => {
+                if(text.href){ return `[${text.plain_text}](${text.href})` }
+                else{ return text.plain_text}
+            } )
+    
+            var foundInfo = ""
+            textElements.forEach(text => foundInfo += text )
+    
+            // 2. Send
+            var _embed = new MessageEmbed();
+            _embed.setTitle(header[header.type].text[0].plain_text);
+            _embed.setDescription(  foundInfo  );
+            channel.send({embeds : [_embed] })
+            channel.send('Maybe check this out?')
+    
+        }
+        else if( "emotion" in entitie || Variable.anyisIn(["positive","negative"], Object.values(traits)) ){
+
+            var randomWord = search_keys[ Math.floor(search_keys.length * Math.random()) ]
+            var gif = await Action.getGIF( randomWord );
+            channel.send( gif );
+
+        }
+        else if( mm.includes('recipe') ){
+            Action.getRecipe('healthy')
+        }
+        else if( Object.keys(entitie).includes('url') ){
+            ReadThisSlowly(entitie.url); 
+        }
+        else{
+            SearchGoogle(mm);
+        }
+    }catch(err){
+        channel.send("Something went wrong on SearchDictionary()")
+        channel.send(err.message)
+    }    
+}
+
+export async function SearchGoogle(mm){
+    try{
+        channel.send( "Give me a sec.. I am searching for you" )
+        var URL = "https://www.google.com/search?q=" + mm ;
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        await page.goto(URL, {waitUntil: 'networkidle2'});
+        var classList = ['.V3FYCf','.hgKElc','.hb8SAc']
+        var explain = "" ; var i = 0; 
+        do{
+            var el = await page.$(classList[i])
+            if(el){explain = await el.evaluate(el=>el.textContent )}
+            i++;
+        }while( explain == "" )
+
+        var _embed = await new MessageEmbed();
+        if(explain.length > 0){
+            explain += lineChange + `[Link](${page._target._targetInfo.url})`
+            _embed.setTitle (  "😎 " + mm  ); 
+            _embed.setDescription(explain);
+        }
+        else{
+            _embed.setDescription(`[Link](${page._target._targetInfo.url})`);
+        }
+        channel.send({embeds : [_embed] })
+        await browser.close; 
+    }catch(err){
+        console.log(err)
+        channel.send("Something went wrong on SearchGoogle()")
+        channel.send(err.message)
+    }
+}
+
+export async function ReadThisSlowly(URL){
+    //channel.send( "Want me to read for you?" )
+    console.log('ReadThisSlowly')
+
+    /*
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.goto(URL, {waitUntil: 'networkidle2'});
+    /*
+    await page.$eval('body',el=>{
+        console.log(el.textContent)
+    })
+
+    const body = await page.evaluate(()=>{
+        return document.getElementsByTagName("body")[0].textContent;
+    })
+    console.log( body )
+
+    await page.screenshot({ path: 'temp/tmp.png' })//, fullPage: true });
+    await browser.close; 
+    */
+
+    await fetch(URL)
+    .then(async function( data) {
+        //console.log(await data.json());
+    })
+    /*
+    .then(post => {
+    console.log(post.title);
+    });\*/
+
+    stored.yesAction = () =>{
+    }
+}

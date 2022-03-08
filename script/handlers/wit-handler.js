@@ -1,7 +1,7 @@
 import 'dotenv/config' 
 import  Wit  from 'node-wit'
 import fs from 'fs'
-import { allisIn, anyisIn } from '../extra/compare.js';
+import { allisIn, anyisIn } from '../extra/util.js';
 const  talkDB = JSON.parse(fs.readFileSync('./script/extra/chat-dictionary.json'));
 
 
@@ -25,7 +25,6 @@ export const entitiesFilter = ( _entities ) =>{
         }
         else if(_entities[key][0].role  == 'location' ){
             entities[_entities[key][0].role] =  _entities[key][0].resolved.values[0]
-            console.log( entities[_entities[key][0].role] )
         }
         else{
             entities[_entities[key][0].role]=  _entities[key][0].value
@@ -48,62 +47,64 @@ export const traitFilter = ( _traits ) =>{
 ///////////
 
 export const findIntention = async ( entities, intents, traits  ) =>{
-    var findDB = null ; var i = 0; 
-    // 0.
-    /*
-    var entities = entitiesFilter(_entities); 
-    var intents = intentFilter(_intents); 
-    var traits = traitFilter(_traits); 
-    */ 
-    //console.log( "🐊",entities,intents,traits )
+   // var findDB = null ; 
 
-    do {
-        var db = talkDB[i];
+    return new Promise( (resolve,error)=>{
 
-        var entitieIn = false ; var intentIn  = false ; var traitKeyIn  = false ; var traitValIn  = false ;
-        
-        // 1. 
-        if( 'entities' in db && Object.keys(db.entities).length > 0 ) {
-           entitieIn = allisIn(  db.entities,  Object.keys(entities)  )
-        }
-        else{
-            entitieIn= true
-        }
+        var findDB = null ; 
 
-        // 2.  intent is must 
-        if( 'intents' in db && db.intents.length > 0 ) {
-            intentIn = allisIn(intents , db.intents)
-        }
+        for(var i = 0; i< talkDB.length;){
 
-        // 3. 
-        if('traits' in db && Object.keys(db.traits).length > 0   )
-        {
-            traitKeyIn = anyisIn( Object.keys(traits) , Object.keys(db.traits)  ) ;
-            if(traitKeyIn){       
-                Object.keys(traits).forEach( key =>{
-                    var test = anyisIn(traits[key] , db.traits[key]) ;
-                    traitValIn = test == false ? false : test ; 
-                    }
-                )
+            var db = talkDB[i];
+            var entitieIn = false ; var intentIn  = false ; var traitKeyIn  = false ; var traitValIn  = false ;
+            
+            // 1. 
+            if( 'entities' in db && Object.keys(db.entities).length > 0 ) {
+               entitieIn = allisIn(  db.entities,  Object.keys(entities)  )
             }
-        }
+            else{
+                entitieIn= true
+            }
+    
+            // 2.  intent is must 
+            if( 'intents' in db && db.intents.length > 0 ) {
+                intentIn = allisIn(intents , db.intents)
+            }
+    
+            // 3. 
+            if('traits' in db && Object.keys(db.traits).length > 0   )
+            {
+                traitKeyIn = anyisIn( Object.keys(traits) , Object.keys(db.traits)  ) ;
+                if(traitKeyIn){       
+                    Object.keys(traits).forEach( key =>{
+                        var test = anyisIn(traits[key] , db.traits[key]) ;
+                        traitValIn = test == false ? false : test ; 
+                        }
+                    )
+                }
+            }
+
+            else{   traitKeyIn = true ; traitValIn = true ;}
         
-        else{
-            traitKeyIn = true ;
-            traitValIn = true
+            // fin 
+            var result = !([entitieIn, intentIn, traitKeyIn, traitValIn ].includes(false));
+            if ( result ){ 
+                findDB = db; 
+                break;
+            }
+            else{  i += 1; }
+            
+            resolve(findDB);
+
         }
+
+        
+
+    })
+
+
     
-        // fin 
-        var result = [entitieIn, intentIn, traitKeyIn, traitValIn ].includes(false);
-        //console.log(entitieIn, intentIn, traitKeyIn, traitValIn )
-        if ( !result ){
-            findDB = db;
-        }
-        i ++ 
-    }
-    while(  !findDB && i < talkDB.length );
     
-    return await findDB; 
 }
 
 

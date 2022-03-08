@@ -1,6 +1,5 @@
 import Discord, { Intents, Collection } from "discord.js";
 import 'dotenv/config' 
-//import { botIn } from "../action/Actions.js";
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { REST } from "@discordjs/rest";
 import { Routes } from 'discord-api-types/v9'
@@ -50,9 +49,8 @@ discord.once("ready", ()=>{
             channel.send(" 🌀"+ err)
         }
     })()
-
-    
     channel = discord.channels.cache.find(c => c.name === "general")
+
 })
 
 discord.login(process.env.BOT_TOKEN);
