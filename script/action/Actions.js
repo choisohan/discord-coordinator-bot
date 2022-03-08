@@ -884,17 +884,39 @@ export async function ReadThisSlowly(URL){
     //channel.send( "Want me to read for you?" )
     console.log('ReadThisSlowly')
 
+    
     /*
+    //Method 1 
+    await fetch(URL)
+    .then(async function( data) {
+        //console.log(await data.json());
+    })
+    */
+
+
+    //Method 2
+    /*
+    await axios.get(URL).then( res => {
+
+    })
+    */ 
+
+
+
+/*
+    
+    //Method 3 
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     await page.goto(URL, {waitUntil: 'networkidle2'});
-    /*
+    
     await page.$eval('body',el=>{
         console.log(el.textContent)
     })
 
     const body = await page.evaluate(()=>{
-        return document.getElementsByTagName("body")[0].textContent;
+        return document.getElementsByTagName("body")[0].textContent
+
     })
     console.log( body )
 
@@ -902,15 +924,5 @@ export async function ReadThisSlowly(URL){
     await browser.close; 
     */
 
-    await fetch(URL)
-    .then(async function( data) {
-        //console.log(await data.json());
-    })
-    /*
-    .then(post => {
-    console.log(post.title);
-    });\*/
 
-    stored.yesAction = () =>{
-    }
 }

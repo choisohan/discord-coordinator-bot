@@ -23,6 +23,7 @@
     "moment": "^2.29.1",
     "moment-timezone": "^0.5.34",
     "mongoose": "^6.2.3",
+    "node-readability": "^3.0.0",
     "node-wit": "^6.0.1",
     "nodemon": "^2.0.15",
     "puppeteer": "^13.4.1",
