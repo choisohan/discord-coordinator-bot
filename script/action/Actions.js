@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import { notion } from "../handlers/notion-handler.js";
-import { channel, newEmbed } from "../handlers/discord-handler.js";
+import { channel } from "../../bot.js"//"../handlers/discord-handler.js";
 import { CronJob } from 'cron'
 import { tweet } from "../handlers/twitter-handler.js";
 import  weather from 'weather-js';
@@ -162,8 +162,9 @@ export var CreateNewLog = async () =>{
            // if( newPage.children.length > 0 ){await notion.spreadItem( newPage , 7 );}
             
             channel.send(`Here it is!`) 
-            var _newEmbed = newEmbed( {description :` [📒${style.Name}](${newPage.url}) `} )
-            channel.send({embeds : [_newEmbed] })
+            var _embed = new MessageEmbed()
+            _embed.setDescription(` [📒${style.Name}](${newPage.url}) `);
+            channel.send({embeds : [_embed] })
         }
     }catch(error){
         channel.send("Something went wrong 👉",error.message)
@@ -335,7 +336,8 @@ export var tellMeAboutReminders = async () =>{
     stored.datas = reminders; 
     // 2. Create Message 
     
-    var _embed = newEmbed({title: "⏰ All Reminders"})
+    var _embed = new MessageEmbed;
+    _embed.setTitle("⏰ All Reminders")
                  
     for( var i = 0 ; i < reminders.length ; i ++ ){
         var _time = reminders[i].Date;
@@ -408,9 +410,11 @@ export var tweetThat = async ()=>{
 
         // 2. Create Message 
         
-        var tweetPreview = newEmbed({title: "💬 Your Tweet " ,description : textBody }) ;
-        if(mediaURLs){tweetPreview.setImage(mediaURLs[0])}
-        channel.send({embeds : [tweetPreview] })
+        var _embed = new MessageEmbed().setTitle("💬 Your Tweet ")
+                                        .setDescription(textBody);
+        
+        if(mediaURLs){_embed.setImage(mediaURLs[0])}
+        channel.send({embeds : [_embed] })
         
 
         // 3. Post Tweet
@@ -495,11 +499,11 @@ var notionDateToDate = (stringDate) =>{
 
 export var TellMeAboutProject = async (_entitie)=>{
 
-    
     var AllProjects = await notion.datas.filter( data => notion.groupFilter(data,"Project" ) )
-    var Now = now(new Date()) //timezone(new Date())
+    var Now = new Date()//now(new Date()) //timezone(new Date())
     var Scheduled = AllProjects.filter( p => p.properties.Date.date != null && p.properties.Date.date.end != null )
     var Completed = Scheduled.filter( p => Now.getTime() >= notionDateToDate(p.properties.Date.date.end).getTime() )
+
     var Incompleted = Scheduled.filter( p => !Completed.includes(p));
 
     var Project ; 
@@ -518,8 +522,8 @@ export var TellMeAboutProject = async (_entitie)=>{
         var title = Project.properties.Name.title[0].plain_text; 
         var start = Project.properties.Date.date.start; 
         var end = Project.properties.Date.date.end; 
-        var Now = now(new Date())
-        var leftDays =  Math.floor( (notionDateToDate(end) - Now )/(1000 * 60 * 60 * 24) );
+        //var Now = now(new Date())
+        var leftDays =  Math.floor( (notionDateToDate(end) - new Date() )/(1000 * 60 * 60 * 24) );
         leftDays = leftDays < 2 ? leftDays.toString() +" day" :leftDays.toString() +" days"
         
         var _embeded = new MessageEmbed()
@@ -683,7 +687,7 @@ export async function getTodaysWorklog(){
         var worklogs = await notion.datas.filter( data => notion.groupFilter(data,"Log" ) )
         var start = notionDateToDate(worklogs[0].properties.Date.date.start);
         var end = notionDateToDate(worklogs[0].properties.Date.date.end);
-        var Now = now(new Date());
+        var Now = new Date()//now(new Date());
         
         if( Now.getTime() <= end.getTime() && Now.getTime() >= start.getTime()   ){
             resolve(worklogs[0]);
@@ -742,8 +746,10 @@ export async function userIn(){
             askBusy(10, leftTodo , nextColumn ); 
     
             if( allTodo.length-leftTodo.length < 5 ){
-                var TASKS_URL = "https://www.notion.so/happpingmin/30ddc8bbffcc481cb702da35789f3cf5?v=f6894f5cc1d246a0b49179d270748e2e"
-                channel.send(`You seems like free, check out [Tasks Page](${TASKS_URL})`)
+                var TASKS_URL = `https://www.notion.so/happpingmin/30ddc8bbffcc481cb702da35789f3cf5?v=f6894f5cc1d246a0b49179d270748e2e`
+                channel.send(`You seems like free, check out Tasks Page`)
+                //e(${TASKS_URL})
+                channel.send({embeds :new MessageEmbed().setDescription(`[${Tasks}](${TASKS_URL}`) })
             }
             })
     

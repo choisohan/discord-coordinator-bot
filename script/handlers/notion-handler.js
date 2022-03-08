@@ -1,9 +1,10 @@
 import 'dotenv/config' 
 import { Client } from '@notionhq/client'
-import {  channel } from './discord-handler.js'
+import {  channel } from '../../bot.js'//'./discord-handler.js'
 import { chunk } from '../extra/util.js';
 import { botIn } from '../action/Actions.js';
 var NOTION; var BLOCKS = [] ; 
+
 
 class notionClient{
     constructor(){

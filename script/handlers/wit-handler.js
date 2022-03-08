@@ -27,7 +27,7 @@ export const entitiesFilter = ( _entities ) =>{
             entities[_entities[key][0].role] =  _entities[key][0].resolved.values[0]
         }
         else{
-            entities[_entities[key][0].role]=  _entities[key][0].value
+                entities[_entities[key][0].role]=  _entities[key][0].value
         }
         
     }
