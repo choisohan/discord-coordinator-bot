@@ -62,7 +62,7 @@ export function arrayToString2( arr ){
     return string 
 }
 
-function isValidHttpUrl(string) {
+export function isValidHttpUrl(string) {
     let url;
     
     try {

@@ -4,7 +4,7 @@ import { channel } from "../../bot.js"//"../handlers/discord-handler.js";
 import { CronJob } from 'cron'
 import { tweet } from "../handlers/twitter-handler.js";
 import  weather from 'weather-js';
-import { MessageEmbed } from 'discord.js';
+import { MessageEmbed, MessageButton , MessageActionRow} from 'discord.js';
 import moment from 'moment';
 import pkg from 'puppeteer';
 import * as Variable from '../extra/util.js';
@@ -15,7 +15,7 @@ import extractor from 'unfluff'
 moment.locale('en-ca')
 
 const  puppeteer  = pkg;
-var stored = {}; var allCrons =[]; var intervals = []; 
+export var stored = {}; var allCrons =[]; var intervals = []; 
 
 var now = (DATE) => moment(DATE) 
 var monday  = (DATE) =>  moment().subtract( DATE.getDay()-1,  'days')
@@ -244,8 +244,14 @@ export async function initCrons( pages ){
 }
 
 export async function respondYes(_entitie){
+    var respond; 
+    respond = stored.yesAction(_entitie);
+    console.log( respond )
+    return respond; 
+    /*
     if( stored.yesAction ){
-        stored.yesAction(_entitie);
+        respond = await stored.yesAction(_entitie);
+        return respond; 
     }
     else{
         channel.send("Sorry, I fell asleep. What do you want?")
@@ -256,6 +262,8 @@ export async function respondYes(_entitie){
             intervals= [];
         }
     }
+    */ 
+    
 }
 export async function respondNo(_entitie){
     if(stored.noAction){
@@ -706,7 +714,7 @@ export async function botIn(){
     reminders = await reminders.filter(data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
     initCrons(reminders);  
     //SearchGoogle('what is javascript');
-    //ReadSlowly('https://en.wikipedia.org/wiki/Hartebeest')
+    ReadSlowly('https://en.wikipedia.org/wiki/Hartebeest')
     //helpEnglish("particullar")
 
 }
@@ -898,25 +906,28 @@ export async function ReadSlowly(URL){
     })
     var texts = data.text().split(lineChange).filter( t => t!= '').map(t => t.split('.'))
     var ArticleBody = []
-    texts.forEach( text =>{text.forEach(t => ArticleBody.push(t))})
+    if( data.image() ){ ArticleBody.push(data.image()) }
+    texts.forEach( text =>{ text.forEach(t => ArticleBody.push(t))})
 
-    
     if(ArticleBody.length >  0 ){
-    
-        if( data.image()){
-            channel.send(data.image())
-        }
-
         var i = 0; 
         stored.yesAction = () =>{
-            channel.send(ArticleBody[i])
+            const row = new MessageActionRow()
+			.addComponents(
+				new MessageButton()
+					.setCustomId('Next')
+					.setLabel('Next')
+					.setStyle('SUCCESS'),
+			);
+            var content = {content : ArticleBody[i] ,components:[row] }
             i += 1;
             if( i == ArticleBody.length){
                 channel.send("Article is finished")
                 stored.yesAction =null; 
             }
+            return content;
         }
-        stored.yesAction()
+        return stored.yesAction()
     
     }
     else{
@@ -962,7 +973,7 @@ export async function helpEnglish(_word){
     await browser.close; 
 
     _embed.setDescription(text)
-    channel.send({embeds : [_embed] })
-
+    return _embed; 
+    //channel.send({embeds : [_embed] })
 }
  
