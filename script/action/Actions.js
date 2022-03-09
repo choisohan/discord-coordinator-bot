@@ -712,7 +712,7 @@ export async function botIn(){
     // When a bot initiate, all the reminder except daily event starts.
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
     reminders = await reminders.filter(data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
-    initCrons(reminders);  
+   // initCrons(reminders);  
     //SearchGoogle('what is javascript');
     ReadSlowly('https://en.wikipedia.org/wiki/Hartebeest')
     //helpEnglish("particullar")
@@ -908,7 +908,7 @@ export async function ReadSlowly(URL){
     var ArticleBody = []
     if( data.image() ){ ArticleBody.push(data.image()) }
     texts.forEach( text =>{ text.forEach(t => ArticleBody.push(t))})
-
+    ArticleBody = ArticleBody.filter(t=>  t.length > 0 )
     if(ArticleBody.length >  0 ){
         var i = 0; 
         stored.yesAction = () =>{
@@ -919,16 +919,20 @@ export async function ReadSlowly(URL){
 					.setLabel('Next')
 					.setStyle('SUCCESS'),
 			);
-            var content = {content : ArticleBody[i] ,components:[row] }
+
+            var content = {content : ArticleBody[i] }
+
             i += 1;
             if( i == ArticleBody.length){
                 channel.send("Article is finished")
                 stored.yesAction =null; 
             }
+            else{
+                content.components = [row]
+            }
             return content;
         }
         return stored.yesAction()
-    
     }
     else{
         channel.send("hm... I can't fetch article body")

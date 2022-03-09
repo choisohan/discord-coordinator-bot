@@ -60,65 +60,56 @@ export async function emojiReaction( _emoji ){
     }
 }
 
+
 export async function gotInteraction(interaction){
-  //console.log( interaction.options._hoistedOptions[0].value )
-  if( interaction.isCommand() ){
-    var commandName = interaction.commandName;
-    var commandOptions = interaction.options._hoistedOptions
-    switch(commandName){
-      case "eng":
-        await interaction.deferReply({ ephemeral: true });
-        var embed = await Action.helpEnglish(commandOptions[0].value);
-        await interaction.editReply({embeds : [embed] }) 
-        break;
-      case "read":
-        await interaction.deferReply({ ephemeral: true });
-        var content = await Action.ReadSlowly(commandOptions[0].value); 
-        await interaction.editReply(content) 
-
-        break;
-    }
-  }
-  else if (interaction.isButton()){
-    var buttonID = interaction.customId;
-    //console.log( interaction )
-
-    switch(buttonID){
-      case "Next":
-        /*
-        const message = await webhook.editMessage('123456789012345678', {
-          content: 'Edited!',
-          username: 'some-username',
-          avatarURL: 'https://i.imgur.com/AfFp7pu.png',
-          embeds: [embed],
-        });*/ 
-        await interaction.deferReply({ ephemeral: true });
-
-        
-        //channel.fetchMessage( interaction.webhook.id).edit("!!!")
-        channel.messages.fetch(interaction.message.id)
-        .then(message => {
-          console.log("💖💖💖",message.components[0].components )
-          message.components[0].components.forEach( el=> {
-            el.setDisabled(true); 
-          }) 
-
-          //message.edit({content: message.content, components: message.components }); 
-          message.update({ embeds: message.content, components: message.components })
-
-        })
-        .catch(console.error);
-
-
-        var content = await Action.stored.yesAction({})
-        await interaction.editReply(content);
-
-        
-        break; 
-    }
-  }
+  if( interaction.isCommand() ){ commandRequested(interaction) }
+  else if (interaction.isButton()){ buttonPressed(interaction) }
 
 }
 
-//await interaction.reply('Pong!');
-//await interaction.followUp('Pong again!');
+
+async function commandRequested(interaction){
+  await interaction.deferReply();
+  console.log(`🙉${interaction.commandName} Command Requested`)
+  var commandOptions = interaction.options._hoistedOptions
+  switch(interaction.commandName){
+    case "eng": //✍
+      var embed = await Action.helpEnglish(commandOptions[0].value);
+      await interaction.editReply({embeds : [embed] }) 
+      break;
+    case "read": //📒
+      var content = await Action.ReadSlowly(commandOptions[0].value); 
+      await interaction.editReply(content) 
+      break;
+  }
+}
+
+
+async function buttonPressed(interaction){
+  
+  // 0. remove button I pressed
+  await interaction.channel.messages.fetch( interaction.message.id ).then(async message => {
+    await message.edit({content : message.content , components : [] }); //delete button!
+  }).catch(err => {
+      console.error("👉" , err.message);
+  });
+
+  // 1. update the latest message
+  interaction.deferReply();
+  /*
+  await interaction.deferReply();// ⬜interaction.followUp
+  switch( interaction.customId ){
+    case "Next":
+      console.log(Action.stored.yesAction() )
+      var content = await Action.stored.yesAction()
+      await interaction.editReply(content);
+      break; 
+  }
+  */ 
+  
+
+  
+
+}
+
+

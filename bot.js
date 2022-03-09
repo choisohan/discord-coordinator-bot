@@ -1,8 +1,6 @@
 
-//import { botClient} from './script/handlers/discord-handler.js'
 import 'dotenv/config' 
-
-import Discord, { Intents, Collection } from "discord.js";
+import Discord, { Intents, Collection   } from "discord.js";
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { REST } from "@discordjs/rest";
 import { Routes } from 'discord-api-types/v9'
@@ -34,7 +32,9 @@ export var bot = new Discord.Client(
     })()
     
     channel = bot.channels.cache.find(c => c.name === "general")
-    Chat.send("")
+
+
+    //Chat.send("")
   
 })
 
@@ -59,21 +59,17 @@ commands.forEach(command =>{
 })
 
 
-//const commands = [ helpEnglish ]; 
-
-bot.on("interactionCreate", async interaction=>{
-  Chat.gotInteraction(interaction)
-})
-/*
-  if(interaction.isCommand()){
-    var commandName = interaction.commandName;
-    switch(commandName){
-      case "eng":
-        
-        break;
-      case "read":
-        console.log("🏰");
-        break;
-    }
+bot.on("messageCreate", async msg =>{
+  if(!msg.author.bot){
+    if(!msg.attachments.size){
+      //Chat.send( msg.content.toLowerCase() )
+      
+      ;}
   }
-*/
+})
+
+bot.on("interactionCreate", async interaction => {
+  Chat.gotInteraction(interaction)
+
+
+})
