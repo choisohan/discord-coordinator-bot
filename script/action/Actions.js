@@ -707,6 +707,7 @@ export async function botIn(){
     initCrons(reminders);  
     //SearchGoogle('what is javascript');
     //ReadSlowly('https://en.wikipedia.org/wiki/Hartebeest')
+    //helpEnglish("particullar")
 
 }
 
@@ -890,6 +891,7 @@ export async function SearchGoogle(mm){
     }
 }
 
+
 export async function ReadSlowly(URL){
     var data = await axios.get(URL).then( res => {
         return extractor.lazy(res.data) 
@@ -920,8 +922,47 @@ export async function ReadSlowly(URL){
     else{
         channel.send("hm... I can't fetch article body")
     }
-    
+}
 
-    
+export async function helpEnglish(_word){
+    var _embed = new MessageEmbed();
+    var URL= "";  var text = ``
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+
+    // 0. Get Meaning
+    try{
+        URL = `https://dic.daum.net/search.do?q=${_word}&dic=eng`
+        await page.goto(URL, {waitUntil: 'networkidle2'});
+        await page.waitForSelector('.list_mean'); 
+        var meaning = await page.$eval('.list_mean', el=> el.textContent.trim()  )
+        if(meaning==""){
+            _word = await page.$eval('.link_speller', el=> el.textContent)
+            URL = `https://dic.daum.net/search.do?q=${_word}&dic=eng`
+            await page.goto(URL, {waitUntil: 'networkidle2'});
+            await page.waitForSelector('.list_mean'); 
+            meaning = await page.$eval('.list_mean', el=> el.textContent.trim()  )
+        }
+        //await page.screenshot({ path: 'temp/tmp_1.png' })
+        text += `**[${_word}](${URL})**\n`
+        text += meaning;
+    }catch(err){
+        console.log("😲😲😲 Daum Page Load Failed  | ", err.message)
+    }
+
+    // 1. Get Synonyms
+    try{
+        URL = 'https://www.thesaurus.com/browse/' + _word
+        await page.goto( URL, {waitUntil: 'networkidle2'});
+        var synonym = await page.$$eval(".css-1kg1yv8", els =>els.map(el => el.textContent) );
+        text += `\n`+ synonym 
+    }catch(err){
+        console.log("😲😲😲 Saurus Page Load Failed  | ", err.message)
+    }
+    await browser.close; 
+
+    _embed.setDescription(text)
+    channel.send({embeds : [_embed] })
 
 }
+ 

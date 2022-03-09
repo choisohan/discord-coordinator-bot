@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 //import { botClient} from './script/handlers/discord-handler.js'
 import 'dotenv/config' 
 
@@ -38,33 +38,3 @@ botClient.once("ready", ()=>{
 })
 
 botClient.login(process.env.BOT_TOKEN);
-
-=======
-import { discord} from './script/handlers/discord-handler.js'
-import Rollbar from 'rollbar';
-import * as Chat from './script/action/Chat.js'
-
-var rollbar = new Rollbar({
-  accessToken: process.env.ROLLBAR,
-  captureUncaught: true,
-  captureUnhandledRejections: true
-});
-rollbar.log("Hello world!");
->>>>>>> 6b10efe9fd0c770877842487628ff897f552077f
-
-// Slash Command
-/*
-botClient.on("interactionCreate", async interaction=>{
-  if(interaction.isCommand()){
-  }
-})
-*/
-
-botClient.on("messageCreate", async msg =>{
-  if(!msg.author.bot){
-    if(!msg.attachments.size){Chat.send( msg.content.toLowerCase() );}
-  }
-})
-
-botClient.on("messageReactionAdd", async reaction =>{Chat.emojiReaction(reaction)})
-
