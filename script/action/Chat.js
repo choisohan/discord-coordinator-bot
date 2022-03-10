@@ -1,87 +1,93 @@
 import * as Wit from '../handlers/wit-handler.js'
 import * as Action from './Actions.js'
-import { bot, channel } from '../../bot.js'//'../handlers/discord-handler.js';
+import {  channel } from '../../bot.js'//'../handlers/discord-handler.js';
 import * as Utils from '../extra/util.js'
-import { MessageEmbed, MessageActionRow, Webhook } from 'discord.js'
+import fs from 'fs'
+export const  talkDB = JSON.parse(fs.readFileSync('./script/extra/chat-dictionary.json'));
+const replyDB = talkDB.filter( el => el.onReply == true) 
 
 //https://raw.githubusercontent.com/omnidan/node-emoji/master/lib/emoji.json
-var yes = ['👍','😍','🙏','❤️',"💯","👌","💖","😃","😄","😆","😆","😀","😁","😇","😎","🔥"]
-var no = ['😑','😬','👎']
+export var yesEmojies = ['👍','😍','🙏','❤️',"💯","👌","💖","😃","😄","😆","😆","😀","😁","😇","😎","🔥"]
+export var noEmojies = ['😑','😬','👎']
 
-export async function send( mm ){
-  /*
+export async function send( message , reference ){
+  var mm = message.toLowerCase();
   var words =  mm.split(' ');
-  var URL =  words.filter(el=> Utils.isValidHttpUrl(el))
-  if( URL.length > 0 ){ // 1. if it has valid URL
-    console.log("yes")
-    Action.ReadSlowly(URL[0]);
-  }else if( Utils.anyisIn(["meaning", "mean", "?"],words) )
-  */ 
-
-
-  /*
-    if(mm.split(" ")[0] == 'clear'){Action.clearChannel()}
-
-
-
-    else if( yes.includes(mm) || no.includes(mm) ){
-      emojiReaction(mm)
+  var DB = !reference ? talkDB : replyDB;
+  var refMessage ;
+  if( reference ){
+    await channel.messages.fetch(reference.messageId).then(
+       original  =>{
+         refMessage = original.content;
     }
-   // else if(mm.split(" ")[0] == 'translate'){Action.translate()}
-   
-    else{
-    Wit.client.message(mm).then( async ( {entities, intents, traits} ) => { 
-      var entities = Wit.entitiesFilter(entities); 
-      var intents = Wit.intentFilter(intents); 
-      var traits = Wit.traitFilter(traits); 
-      
-      var findDB =  await Wit.findIntention( entities, intents, traits) ; 
-      if('message' in findDB ){
-        var rand_message = findDB.message[ Math.floor(findDB.message.length * Math.random()) ] ;
-        channel.send(rand_message) ; // send random message from the list
-      }
-      if('script' in findDB ){eval( await findDB.script[0] )}
-      
-      }
-      
-      )
-    }
-    */ 
-    
+  )}
+  // 0. Clear
+  if ( mm.substring() == "clear" ){
+    Action.clearChannel(); 
+  }
+  // 1. Read Slowly
+  else if( Utils.isValidHttpUrl( words.at(-1)) ){ // 1. if it has valid URL
+    channel.send(await Action.ReadSlowly( words.at(-1) ))
+  }
+  // 2. Emoji Reaction
+  else if( yesEmojies.includes(mm) ){
+    channel.send(await Action.respondYes()); 
+  }
+  else if( noEmojies.includes(mm) ){
+    channel.send(await Action.respondNo()); 
   }
 
+  // 3. 
+  else{
+  Wit.client.message(mm).then( async ( {entities, intents, traits} ) => { 
+    
+    var entities = Wit.entitiesFilter(entities); 
+    var intents = Wit.intentFilter(intents); 
+    var traits = Wit.traitFilter(traits); 
+    //console.log( "🌈",entities )
+    var findDB =  await Wit.findIntention( entities, intents, traits, DB ) ; 
+    //console.log( findDB )
+    if('message' in findDB ){
+        var rand_message = findDB.message[ Math.floor(findDB.message.length * Math.random()) ] ;
+        channel.send(rand_message) ;
+    }
+    if('script' in findDB ){
+        var response = await eval(findDB.script[0] );
+        channel.send( response )
+    }})}
+  }
 
-export async function emojiReaction( _emoji ){
-    if(yes.includes(_emoji)){
-        Action.respondYes(); 
-    }
-    else if(no.includes(_emoji)){
-        Action.respondNo(); 
-    }
-}
 
 
 export async function gotInteraction(interaction){
   if( interaction.isCommand() ){ commandRequested(interaction) }
   else if (interaction.isButton()){ buttonPressed(interaction) }
-
 }
-
 
 async function commandRequested(interaction){
   await interaction.deferReply();
-  console.log(`🙉${interaction.commandName} Command Requested`)
   var commandOptions = interaction.options._hoistedOptions
+  var input = commandOptions[0].value
+
   switch(interaction.commandName){
     case "eng": //✍
-      var embed = await Action.helpEnglish(commandOptions[0].value);
-      await interaction.editReply({embeds : [embed] }) 
+      var response = await Action.helpEnglish(input);
       break;
     case "read": //📒
-      var content = await Action.ReadSlowly(commandOptions[0].value); 
-      await interaction.editReply(content) 
+      var response = await Action.ReadSlowly(input); 
       break;
+    case "todo": //✅
+      var response = await Action.createNewTask(input); 
+      break;
+    case "goog": //🔍
+      var response = await Action.SearchGoogle(input); 
+      break; 
+    case "remind": //⏰
+      var response = await Action.createReminder(input); 
+      break; 
+
   }
+  await interaction.editReply( response ) 
 }
 
 
@@ -95,21 +101,28 @@ async function buttonPressed(interaction){
   });
 
   // 1. update the latest message
-  interaction.deferReply();
-  /*
-  await interaction.deferReply();// ⬜interaction.followUp
+  interaction.reply('...')
+  interaction.deleteReply(); 
+  
   switch( interaction.customId ){
     case "Next":
-      console.log(Action.stored.yesAction() )
-      var content = await Action.stored.yesAction()
-      await interaction.editReply(content);
+      var content = await Action.yesAction['ReadSlowly']()
+      channel.send(content); 
+      //await interaction.editReply(content);
       break; 
   }
-  */ 
-  
-
-  
-
 }
 
+export async function gotReaction( reaction ){
+  var emoji = reaction._emoji.name;
+  console.log( emoji )
+
+  if( yesEmojies.includes(emoji) ){
+    channel.send(await Action.respondYes()); 
+  }
+  else if( noEmojies.includes(emoji) ){
+    channel.send(await Action.respondNo()); 
+  }
+  
+}
 

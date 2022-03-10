@@ -32,10 +32,6 @@ export var bot = new Discord.Client(
     })()
     
     channel = bot.channels.cache.find(c => c.name === "general")
-
-
-    //Chat.send("")
-  
 })
 
 bot.login(process.env.BOT_TOKEN);
@@ -51,25 +47,29 @@ const newSlash = (_name,_input,_description) => {return new SlashCommandBuilder(
 
 const eng = newSlash('eng',"word","I can help your english word"); 
 const read = newSlash('read',"URL","I can read article for you"); 
+const todo = newSlash('todo',"name","you have the new tasks?"); 
+const goog = newSlash('goog',"name","I can google for you"); 
+const remind = newSlash('remind',"name","I can add a new reminder for you"); 
 
-const commands = [ eng ,read ]; 
+const commands = [ eng ,read , todo , goog, remind]; 
 bot.commands = new Collection(); 
 commands.forEach(command =>{
   bot.commands.set(command.name, command)
 })
 
 
-bot.on("messageCreate", async msg =>{
-  if(!msg.author.bot){
-    if(!msg.attachments.size){
-      //Chat.send( msg.content.toLowerCase() )
-      
+bot.on("messageCreate", async message =>{
+  if(!message.author.bot){
+    if(!message.attachments.size){
+        Chat.send( message.content , message.reference )
       ;}
   }
 })
 
 bot.on("interactionCreate", async interaction => {
   Chat.gotInteraction(interaction)
-
-
 })
+
+bot.on("messageReactionAdd", reaction =>
+  Chat.gotReaction( reaction )
+)

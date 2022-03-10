@@ -1,16 +1,52 @@
 # ⭐ Summary
-This is the little discord bot project created by [Min Shin](instagram.com/happping_min). The goal is creating the coordinator bot which manage the notion database and extra more. Development is still going on. 
+This is the little discord bot project created by [Min Shin](instagram.com/happping_min).
+The goal is creating the coordinator bot which manage the notion database and extra more. Development is still going on. 
 
+# ⭐How to communicate with a bot
 
-# ⭐ Features
-1. Communite with a user's natural language message
-2. Read and Create, Modify notion Database
-3. Recurring tasks & reminder management based on notion database
-4. Answer the user's question based on user's dictionary page or google search
-5. Send a long article into a chat message.
-6. react message with GIF and emoji
+## 1. Example Chat
+- [x] "Good Morning", "Hi" : initiate the daily clonJobs
+- [x] "Good Night", "Bye" : deactive the daily clonJobs
+- [x] "What is today's tasks?"
+- [x] "What is today's left tasks?"
+- [x] "What is today's project?"
+- [ ] "Can you change the current project due date?"
+- [x] "Can you remind me every an hour to stretching?"
+- [x] "Can you create new log?"
+- [x] "Tell me about all reminders"
+- [ ] "Bring more tasks to today"
+- [x] "How's the weather like in korea?" or "what is the time in london?"
+- [x] "What to cook with chicken?"
+- [x] "How's my instagram doing?" ,"Show me my twitter status"
+- [x] "Can you tweet that?" : this works after the tweetable command or when you replied to your own message
+- [ ] `read this ${URL}` : start slow reading mode
 
+## 2. Respond with Yes and No
+questions like create new page or post on the social media is require the double check. You can answer with "yes" or "no" or even sending emoji or react the bot's message with emoji.
+- [ ] "yes"
+- [ ] "no"
+- [ ] "more"
+- [ ] "stop"
+This four message works when you type the default chat or replied on the bot's message
+
+## 3. Customize conversation with Notion
+- [ ] "I need to write on blog, where to write?"
+- [ ] "What I should do when I go back to korea?"
+A message like this will be searched on Notion Database as dictionary
+
+## 4. Slash Command List
+Slash command is added after chat feature for shortcut
+- `/goog` + word : search on google
+- `/eng` + word : search on english word
+- `/read`+ URL  : split the article into chat
+- `/todo` + name : add on tasks
+
+## 5. Fun chat
+- [x] Emotional(?) message such as "omg","lol","I am tired" will return GIF
+
+----
 # ⭐Configuration
+
 ## 1. Required Env Var
 BOT_TOKEN (discord) , NOTION_TOKEN , NOTION_DB_ID , WIT_TOKEN, TIMEZONE 
 
@@ -81,4 +117,5 @@ prop("_minute") + " " + prop("_hour") + " " + prop("_day") + " " + prop("_month"
 - if there is the callout block on the page, it will be recognized as a code block(which is not supported in notion API yet). so create the code block and write any javascript. this will fired when cron job is fired. While you can write anything on the block but except "", ''. Don't use them, **you must use backtick ` instead**.
 
 ![](/src/callout.JPG)
+
 

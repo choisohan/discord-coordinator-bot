@@ -19,7 +19,6 @@ class notionClient{
     }
 
     async appendChild( parent , children ){
-        console.log(  children )
         await NOTION.blocks.children.append({
             block_id: parent.id ,
             children : children
@@ -41,7 +40,6 @@ class notionClient{
     }
 
     async getColumns( page ){
-        //console.log( "getColumns(" + page_ID +")")
         var Weeks = []; 
 
         var column_list = await this.getChildren( page );
@@ -63,7 +61,6 @@ class notionClient{
     async modifyPage( _page , _properties ){
         _properties = Object.entries(_properties).filter = ( [ key , value ] ) => _page.includes( key ) ;
         _properties = Object.fromEntries(_properties)
-        console.log( "🌸",_properties )
     }
 
     async getChildren( _block ){
@@ -71,7 +68,6 @@ class notionClient{
             var children =  await NOTION.blocks.children.list({ block_id: _block.id });
             return children.results
         }else{
-            console.log("none")
             return [] }
     }
     
@@ -152,7 +148,6 @@ class notionClient{
             var t = Type.text[0].plain_text
             text += t; 
         }
-        console.log(text); //⬜debug
         return text;
     }
     
@@ -206,7 +201,6 @@ class notionClient{
     
 
     async parent( block , goalParent ){
-        console.log("👼")
         
         await NOTION.blocks.children.append({
             block_id : goalParent.id, children :[ duplicatedBlock( block  ) ]
@@ -273,7 +267,6 @@ var newPageInfo =  async(  _refPage , _style) =>{
     var styleKeys = Object.keys(_style).filter( _st => _st != "children" &&  _st != "icon" )
 
     styleKeys.forEach(_st => {
-        console.log(_st)
         _properties[_st] = PropertyHQ( _refPage.properties[_st].type , _style[_st] ); 
     })
     var _info = { parent: { database_id : _refPage.parent.database_id },
@@ -369,27 +362,23 @@ async function getAllBlocks(pageID){
     BLOCKS = []
     Promise.resolve( await NOTION.blocks.children.list({block_id: pageID})).then( resolve => {
         BLOCKS = resolve.results;
-        //console.log("level1",BLOCKS.length);
         
         BLOCKS.forEach(b =>{
             if(b.has_children){
                 Promise.resolve( getChildren(b.id) ).then( resolve2 =>{
                     resolve2.results.forEach(b2 =>{
                         BLOCKS.push(b2);
-                        //console.log("level2",BLOCKS.length);
 
                         if(b2.has_children){
                             Promise.resolve( getChildren(b2.id) ).then( resolve3 =>{
                                 resolve3.results.forEach(b3 =>{
                                     BLOCKS.push(b3);
-                                    //console.log("level3",BLOCKS.length);
 
                                     if(b3.has_children){
                                         Promise.resolve( getChildren(b3.id) ).then( resolve4 =>{
                                             resolve4.results.forEach(b4 =>{
                                                 BLOCKS.push(b4);
                                                 return BLOCKS;
-                                                //console.log("level4",BLOCKS.length);
                                             })
                                         })
                                     }
@@ -403,12 +392,6 @@ async function getAllBlocks(pageID){
     })
 }
 
-
-/*
-async function getChildren( id ){
-    return await NOTION.blocks.children.list({block_id: id});
-}
-*/ 
 
 
 var emptyChildren  = 

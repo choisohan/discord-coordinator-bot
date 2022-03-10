@@ -10,12 +10,12 @@ import pkg from 'puppeteer';
 import * as Variable from '../extra/util.js';
 import axios from 'axios';
 import extractor from 'unfluff'
-
-
+import {yesEmojies, noEmojies, send} from './Chat.js'
 moment.locale('en-ca')
 
 const  puppeteer  = pkg;
-export var stored = {}; var allCrons =[]; var intervals = []; 
+export const yesAction ={}; export const noAction = {};  export const moreAction = {}; 
+export const stored = {datas: null , numb: null}; const intervals = [];  const allCrons= []
 
 var now = (DATE) => moment(DATE) 
 var monday  = (DATE) =>  moment().subtract( DATE.getDay()-1,  'days')
@@ -34,11 +34,9 @@ export async function createNewTask( _name ){
         notion.datas.push(newPage)
         var _newEmbed = new MessageEmbed();
         _newEmbed.setDescription(`✨The new tasks [${_name}](${newPage.url})`)
-        channel.send({embeds : [_newEmbed] })
-        return task; 
+        return {embeds : [_newEmbed] } ;
     }catch(error){
-        console.log(error )
-        channel.send("Something went wrong " + error.message)
+        return "Something went wrong " + error.message
     }
 
 }
@@ -60,23 +58,23 @@ export async function inspectOldTasks(_entitie){
         
         stored.numb = 0 ; 
         var ask = () => {
-            stored.numb+= 1; 
+            stored.numb += 1; 
             var _name = tasks[stored.numb].properties.Name.title[0].plain_text;
-            channel.send( 'How about doing "' + _name + '"?' );
+            return `How about doing ${_name}?`
         }
         
         ask(); 
 
-        stored.moreAction = _entitie =>{
-            channel.send(" - ");
-            ask();
+        moreAction["inspectOldTasks"] = _entitie =>{
+            //channel.send(" - ");
+            return ask();
         }
 
-        stored.noAction = _entitie =>{
-            ask();
+        noAction["inspectOldTasks"] = _entitie =>{
+            return ask();
         }
         
-        stored.yesAction = async _entitie =>{
+        yesAction["inspectOldTasks"] = async _entitie =>{
             if( ["perfect","that","awesome"].includes( _entitie.yes.substring() ) ){
                 // 0. Add new blocks
                 var names = items.map( item => item.Name.title[0].plain_text )
@@ -94,13 +92,13 @@ export async function inspectOldTasks(_entitie){
                 // 2. send message
                 var _embed = new MessageEmbed();
                 _embed.setDescription(  Variable.arrayToString2(names) );
-                channel.send({embeds : [_embed] })
                 channel.send(`I just moved ${items.length} tasks to your [${worklog.properties.Name.title[0].plain_text}](${worklog.url})`)
+                return {embeds : [_embed] }
             }
             else{
                 channel.send(" + ");
-                ask();
                 items.push( tasks[stored.numb] ); //add
+                return ask();
             }
         }
 }
@@ -120,21 +118,16 @@ export async function fromLogToTasks(){
             await notion.createNew( process.env.NOTION_DB_ID , style , null )
             await notion.deleteItem(b.id)
         })
-        var text = "I just moved today's left tasks to [Tasks]" 
-        channel.send(text)
+        return "I just moved today's left tasks to [Tasks]" 
+
 
     }catch(err){
-        channel.send("Something went wrong with fromLogToTasks():" + err.message)
+        return "Something went wrong with fromLogToTasks():" + err.message
     }
 
 }
 
 
-
-export async function translate(){
-
-
-}
 
 
 
@@ -152,12 +145,8 @@ export var CreateNewLog = async () =>{
     
         var style = { Name : mmdd( monday(new Date())) , Group : 'Log', icon : '📙'}
         style.Date = {start : monday(new Date()).format('L') ,end : sunday(new Date()).format('L') }
-        console.log( style.Date.start )
-        
-        
-        channel.send(`Do you want me to create new 📒log?`)
-        
-        stored.yesAction = async() =>{
+
+        yesAction["CreateNewLog"] = async() =>{
             var newPage =  await notion.createNew( process.env.NOTION_DB_ID, style ,BUILD ); 
             notion.datas.push(newPage)
            // if( newPage.children.length > 0 ){await notion.spreadItem( newPage , 7 );}
@@ -165,10 +154,14 @@ export var CreateNewLog = async () =>{
             channel.send(`Here it is!`) 
             var _embed = new MessageEmbed()
             _embed.setDescription(` [📒${style.Name}](${newPage.url}) `);
-            channel.send({embeds : [_embed] })
+            return {embeds : [_embed] }
         }
+        
+        return `Do you want me to create new 📒log?`
+        
+
     }catch(error){
-        channel.send("Something went wrong 👉",error.message)
+        return "Something went wrong 👉",error.message
     }
 
     
@@ -178,7 +171,7 @@ export async function clearChannel(){
     Promise.resolve( await channel.messages.fetch({limit: 100}) )
       .then( fetched =>{
         channel.bulkDelete(fetched);
-        channel.send(`Awesome New Beginning❤️`)
+        //channel.send(`Awesome New Beginning❤️`)
       })
 }
 
@@ -223,8 +216,8 @@ export async function initCrons( pages ){
            var sendMessage = channel.send( message )
            intervals.push(setInterval(sendMessage, 3000 ))
 
-            stored.yesAction = () =>{
-                channel.send("Good Job!");
+            yesAction["initCrons"] = () =>{
+                return "Good Job!";
                 //clearInterval(interval);
 
             }
@@ -234,7 +227,7 @@ export async function initCrons( pages ){
                 try{
                     eval(scripts[Math.floor( scripts.length * Math.random() )]  )
                 }catch(error){
-                    console.log( channel.send("🤷🏽‍♀️ Something went wrong. "+ reminder.Name.title[0].plain_text +" : "+ error.message) )
+                    channel.send( `🤷🏽‍♀️ Something went wrong.${reminder.Name.title[0].plain_text} : ${error.message}` ) 
                 }                             
             }     
         }, null, null , process.env.TIMEZONE);
@@ -243,49 +236,65 @@ export async function initCrons( pages ){
     })
 }
 
-export async function respondYes(_entitie){
-    var respond; 
-    respond = stored.yesAction(_entitie);
-    console.log( respond )
-    return respond; 
-    /*
-    if( stored.yesAction ){
-        respond = await stored.yesAction(_entitie);
-        return respond; 
+export async function respondYes( _entitie, _id ){
+    console.log("YES")
+    if (_id){
+        try{
+            var respond = await yesAction[_id](_entitie) ;
+            return respond; 
+        }catch(err){
+            return "Sorry, I fell asleep. What do you want?"
+        }  
     }
     else{
-        channel.send("Sorry, I fell asleep. What do you want?")
-    }
-    if( intervals.length > 0 ){
-        for ( var INTER in intervals){
-            clearInterval(INTER);
-            intervals= [];
+        var arr = Object.values(yesAction);
+        if( arr.length > 0 ){
+            return await arr.at(-1)(_entitie);
+        }
+        else{
+            return yesEmojies[Math.floor(Math.random() * yesEmojies.length )]
         }
     }
-    */ 
-    
+
 }
-export async function respondNo(_entitie){
-    if(stored.noAction){
-        stored.noAction(_entitie); 
-    }else{
-        channel.send("No problem!👍")
+export async function respondNo( _entitie , _id ){
+    console.log("NO")
+    if (_id){
+        try{
+            var respond = await noAction[_id](_entitie) ;
+            return respond; 
+        }catch(err){
+            return "Sorry, I fell asleep. What do you want?"
+        }  
     }
+    else{
+        var arr = Object.values(noAction);
+        if( arr.length > 0 ){
+            return arr.at(-1);
+        }
+        else{
+            return noEmojies[Math.floor(Math.random() * noEmojies.length )]
+        }
+    }
+
 }
 // Repeating Action
 export async function requestMore(_entitie){
-    if(stored.moreAction){
-        stored.moreAction(_entitie);
+    try{
+        const latestMore = Object.values(moreAction)[0]
+        return latestMore(_entitie)
+    }catch(err){
+
     }
 }
 
 export async function requestStop(_entitie){
-    channel.send("No problem!")
-    stored = {}
+    yesAction={}, noAction= {} , moreAction ={}
+    return "No problem!"
 }
 
 export async function createReminder(entitie){
-    console.log( entitie )
+
     // 0. sort
     var _agenda = entitie.agenda_entry ? entitie.agenda_entry : "something" ;
     var style = { Name : _agenda , Group: 'Reminder' , icon: "⏰"};
@@ -300,17 +309,7 @@ export async function createReminder(entitie){
         style.Date = {start : CAL.year +"-" + CAL.month +"-"+CAL.day , end: null }
     }
 
-    // 1. check up message
-    var _newEmbed = new MessageEmbed();
-    _newEmbed.setTitle("New Reminder");
-    Object.keys(style).forEach( k=>{
-        _newEmbed.addFields({name : k , value :style[k].toString(),inline:true})
-    })
-    channel.send({embeds : [_newEmbed] })
-    channel.send("Want me to create like this?")
-
-
-    stored.yesAction = async() =>{
+    yesAction["createReminder"] = async() =>{
         
         // 1. add notion
         var page = await notion.createNew( process.env.NOTION_DB_ID , style ,null ); 
@@ -323,43 +322,57 @@ export async function createReminder(entitie){
         },null, null , process.env.TIMEZONE);
         allCrons.push(newCron);
         newCron.start();
-
-        channel.send("I added a new reminder for you!")
-            
+        const _embed =  new MessageEmbed().setDescription(`[⏰${_agenda}](${page.url})`)
+        channel.send({embeds : [_embed] })
+        return "I added a new reminder for you!"
     }
+    // 1. check up message
+    var _newEmbed = new MessageEmbed();
+    _newEmbed.setTitle("New Reminder");
+    Object.keys(style).forEach( k=>{
+        _newEmbed.addFields({name : k , value :style[k].toString(),inline:true})
+    })
+    
+    channel.send("Want me to create like this?")
+    return {embeds : [_newEmbed] }
+
 }
 
 
 export var tellMeAboutReminders = async () =>{
     // 1. get
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
-    reminders = reminders.map( item => 
-            { return  {  Name : item.properties.Name.title[0].plain_text,
-                        Date : item.properties.Date.date.start,
-                        Recurring : item.properties.Recurring.number,
-                        Unit : item.properties.Unit.select ? item.properties.Unit.select.name   : null ,
-                        URL : item.url,
-                        id: item.id
-                    }
-            } )
-    stored.datas = reminders; 
-    // 2. Create Message 
+    reminders = reminders.map( item => {
+        return {  Name : item.properties.Name.title[0].plain_text,
+            Date : item.properties.Date.date ? item.properties.Date.date.start : null ,
+            Recurring : item.properties.Recurring ? item.properties.Recurring.number : null ,
+            Unit : item.properties.Unit.select ? item.properties.Unit.select.name   : null ,
+            URL : item.url,
+            id: item.id,
+            cronTime: item.properties['Cron Time'].formula.string
+        }
     
+    })
+
+    // 2. Create Message 
     var _embed = new MessageEmbed;
     _embed.setTitle("⏰ All Reminders")
+    var _arr = [] 
                  
     for( var i = 0 ; i < reminders.length ; i ++ ){
-        var _time = reminders[i].Date;
-        _embed.addFields({ name : _time , value : `[ ${i}. ${reminders[i].Name} ](${reminders[i].URL} )` } )
+        //var _time = reminders[i].Date;
+        //var _name = reminders[i].Name
+        //_embed.addFields({ name : _name , value : `[ ${i}. ${reminders[i].cronTime} ](${reminders[i].URL} )` } )
+        _arr.push(`[ ${reminders[i].Name} ](${reminders[i].URL} )    ${reminders[i].cronTime} `)
     }
-
-    channel.send({embeds : [_embed] })  
+    _embed.setDescription(await Variable.arrayToString2(_arr) ); 
 
     stored.datas = reminders; 
-    return reminders;
+    return {embeds : [_embed] };
+
 }
 
-
+// ⬜ Need Update
 export var deleteSelected = async ( _entities ) =>{
 
     if( !stored.datas ){
@@ -368,7 +381,7 @@ export var deleteSelected = async ( _entities ) =>{
 
     else{
         channel.send("I can delete if you want!")
-        stored.yesAction = async () =>{
+        yesAction["tellMeAboutReminders"] = async () =>{
             var numbers = _entities['number']
             numbers = numbers.map( numb => numb.value )
             for (var i = 0; i < numbers.length ; i ++  ){
@@ -394,44 +407,40 @@ export var spreadTodo = async ()=>{
     notion.spreadItem(latest , 7 ); 
 }*/ 
 
-export var tweetThat = async ()=>{
+export var tweetThat = async ( textBody , mediaURLs ) =>{
+    if(!textBody){
+        await channel.messages.fetch( {limit:5} ).then( messages =>{
+            // 0. Clean up
+            messages = messages.filter( msg => !msg.author.bot );
+            var keys = Array.from(messages.keys())
+    
+            // 1. Assign         
+            textBody = messages.get(keys[1]).content.length != 0 ?
+                        messages.get(keys[1]).content : messages.get(keys[2]).content;
+    
+            mediaURLs = messages.get(keys[1]).attachments.size ?
+                            messages.get(keys[1]).attachments :
+                            messages.get(keys[2]).attachments.size ?
+                            messages.get(keys[2]).attachments  : new Map() ;
+             
+            if( mediaURLs.size > 0 ){
+                mediaURLs = Array.from( mediaURLs.values() )
+                mediaURLs = mediaURLs.map( media => media.attachment )}    
+        })
 
-    await channel.messages.fetch( {limit:5} ).then( messages =>{
+    }
 
-        // 0. Clean up
-        messages = messages.filter( msg => !msg.author.bot );
-        var keys = Array.from(messages.keys())
-        //delete keys[0]
+    // 2. set Post Tweet
+    yesAction["tweetThat"] = () =>{
+        tweet( textBody, mediaURLs )
+    }
+    // 2. Create Message 
+    var _embed = new MessageEmbed().setTitle("💬 Your Tweet ")
+                                    .setDescription(textBody);
+    
+    if(mediaURLs){_embed.setImage(mediaURLs[0])}
+    return {embeds : [_embed] }
 
-        // 1. Assign         
-        var textBody = messages.get(keys[1]).content.length != 0 ?
-                    messages.get(keys[1]).content : messages.get(keys[2]).content;
-
-        var mediaURLs = messages.get(keys[1]).attachments.size ?
-                        messages.get(keys[1]).attachments :
-                        messages.get(keys[2]).attachments.size ?
-                        messages.get(keys[2]).attachments  : new Map() ;
-         
-        if( mediaURLs.size > 0 ){
-            mediaURLs = Array.from( mediaURLs.values() )
-            mediaURLs = mediaURLs.map( media => media.attachment )
-        }      
-
-        // 2. Create Message 
-        
-        var _embed = new MessageEmbed().setTitle("💬 Your Tweet ")
-                                        .setDescription(textBody);
-        
-        if(mediaURLs){_embed.setImage(mediaURLs[0])}
-        channel.send({embeds : [_embed] })
-        
-
-        // 3. Post Tweet
-        stored.yesAction = () =>{
-            tweet( textBody, mediaURLs )
-        }
-
-    })
 }
 
 //https://github.com/devfacet/weather
@@ -462,9 +471,9 @@ export var TellMeAboutTasks = async (_entitie) =>{
         var worklog = await getTodaysWorklog();
         var columns = await notion.getColumns( worklog ) ; 
     
-        Promise.resolve( getTasks(day,columns ) ).then( async ([allTodo, leftTodo] )=>{
+        return Promise.resolve( getTasks(day,columns ) ).then( async ([allTodo, leftTodo] )=>{
             var text = "" ; 
-            var _newEmbed = new MessageEmbed();
+            var _newEmbed = await new MessageEmbed();
             _newEmbed.setTitle (  "🌈 " + date.toDateString()  ); 
             if("how_many" in _entitie){
                 text = "You have  " + leftTodo.length.toString() +"/" + allTodo.length.toString() +" tasks" ;
@@ -475,13 +484,13 @@ export var TellMeAboutTasks = async (_entitie) =>{
             }
             text += lineChange += `[📙${worklog.properties.Name.title[0].plain_text}](${worklog.url})`
             _newEmbed.setDescription( text ); 
-            channel.send({embeds : [_newEmbed] })
             var nextColumn = columns[Math.min(day + 1, columns.length)]
             askBusy( 10 ,leftTodo , nextColumn ); 
+            return {embeds : [_newEmbed] }
         })
         
     }catch(error){
-        channel.send("😧Something went wrong "+ error.message)
+        return "😧Something went wrong "+ error.message
     }
 
 
@@ -492,9 +501,7 @@ var getTasks = async( day , columns ) =>{
     var TodaysColumn = columns[day]; 
     var allTodo = await notion.getChildren( TodaysColumn, {type:'to_do'} );
     allTodo = await allTodo.filter(b => b.to_do )
-    console.log( allTodo )
     var leftTodo = await allTodo.filter( b => !b.to_do.checked );
-    
     return [allTodo, leftTodo]; 
 }
 
@@ -560,10 +567,10 @@ export var TellMeAboutProject = async (_entitie)=>{
        }
 
         _embeded.addFields({name :'Information' , value : Text })
-       channel.send({embeds : [_embeded] }) 
+        return {embeds : [_embeded] }
     }
     else{
-        channel.send(
+        return (
 `You don't have any specific project assigned!
 Do anything you like!❤`)
     }
@@ -593,7 +600,7 @@ export async function TellMeAboutLocation(_entitie){
 
     // 2. Send
     if(!_newEmbed.description &&  !_newEmbed.fields ){}
-    else{channel.send({embeds : [_newEmbed] })}
+    else{ return {embeds : [_newEmbed] }}
 
 }
 
@@ -610,12 +617,13 @@ export async function getGIF(search_term){
     })
 }
 
-export async function getRecipe(_keyword){
-
+export async function getRecipe(_keywords){
+    console.log( "👩‍🍳🍚" ,_keywords )
+    var _keyword = _keywords ? _keywords : "healthy"
     var URL = 'https://tasty.co/search?q='+_keyword+'&sort=popular'
     var _selector ='.feed-item__img-wrapper';
 
-    stored.moreAction = async ()=> {
+    moreAction["getRecipe"] = async ()=> {
 
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
@@ -650,15 +658,13 @@ export async function getRecipe(_keyword){
         _embeded.setImage( recipe.thumbnail ); 
         _embeded.addFields( {name :"ingredients" , value : recipe.ingredients , inline:true  })
         _embeded.addFields( {name :"instruction" , value : recipe.instruction  , inline:true })
-        channel.send({embeds : [_embeded] }) 
-
         channel.send(recipe.video);
+        return {embeds : [_embeded] }
     }
-
     try{
-        stored.moreAction();
+        return moreAction["getRecipe"]();
     }catch(error){
-        channel.send("Something went wrong with.. "+ error.message)
+        return "Something went wrong with.. "+ error.message
     }
 
 }
@@ -685,9 +691,8 @@ export async function TellMeAboutSocialStat(_entitie){
     _embeded.addFields( {name :"❤️Instagram" , value : stats.instagram  })
     _embeded.addFields( {name :"❤️Twitter" , value :  stats.twitter   })
 
-
-    channel.send({embeds : [_embeded] }) 
     await browser.close; 
+    return {embeds : [_embeded] }
 }
 
 
@@ -713,10 +718,9 @@ export async function botIn(){
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
     reminders = await reminders.filter(data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
    // initCrons(reminders);  
-    //SearchGoogle('what is javascript');
-    ReadSlowly('https://en.wikipedia.org/wiki/Hartebeest')
-    //helpEnglish("particullar")
-
+   //send("hi")
+   //channel.send({content:":D",activity:[ "🏰🏰🏰"]}).then(msg => console.log( msg ))
+    
 }
 
 
@@ -724,32 +728,25 @@ export async function botIn(){
 export async function userIn(){
     var messages = ['Hello!','You came back!',"Hey Darling!"];  
     channel.send( messages[Math.floor( Math.random() * messages.length )]);
-
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
     reminders = reminders.filter( data => data.properties.Unit.select == null || ['minute','hour','day'].includes(data.properties.Unit.select.name)    )
     initCrons(reminders); 
 
-    //
-    var _embeded = new MessageEmbed().setTitle(` ♥ Let's start Today `)
-
-    // 0. weather
-    await getWeather( _embeded , 'Vancouver, BC');
+    var _embed = new MessageEmbed().setTitle(` ♥ Let's start Today `)
+    await getWeather( _embed , 'Vancouver, BC');
 
     // 1. todo 
-
     try{
         var worklog = await getTodaysWorklog(); 
         var columns = await notion.getColumns( worklog ) ; //page
         var day = new Date().getDay()
         day = day == 0 ? 6: day - 1; 
-        Promise.resolve( getTasks(day, columns ) ).then( async (  [allTodo , leftTodo]  ) =>{
+        var [allTodo , leftTodo] =  await getTasks(day, columns ) ;
+        //Promise.resolve( getTasks(day, columns ) ).then( async (  [allTodo , leftTodo]  ) =>{
     
             var todos = await notion.blocks_to_text(allTodo);     
-            _embeded.addFields({name : "Tasks", value : todos})
-            _embeded.addFields({name : "Count", value : `${allTodo.length-leftTodo.length}/${allTodo.length}`})
-        
-            // 9. send
-            channel.send({embeds : [_embeded] }) 
+            _embed.addFields({name : "Tasks", value : todos})
+            _embed.addFields({name : "Count", value : `${allTodo.length-leftTodo.length}/${allTodo.length}`})
         
             // 9. if task is too many
             var nextColumn = columns[Math.min(day + 1, columns.length)]
@@ -758,52 +755,46 @@ export async function userIn(){
             if( allTodo.length-leftTodo.length < 5 ){
                 var TASKS_URL = `https://www.notion.so/happpingmin/30ddc8bbffcc481cb702da35789f3cf5?v=f6894f5cc1d246a0b49179d270748e2e`
                 channel.send(`You seems like free, check out Tasks Page`)
-                //e(${TASKS_URL})
-                channel.send({embeds :new MessageEmbed().setDescription(`[${Tasks}](${TASKS_URL}`) })
+                channel.send({embeds :new MessageEmbed().setDescription(`[Tasks](${TASKS_URL}`) })
             }
-            })
-    
+            //})
+            return {embeds : [_embed] }
+            
 
-    }catch(error){
-        channel.send("Something went wrong "+ error.message)
-    }
-
-  
-
-
-
-
+        }catch(error){
+            return "Something went wrong 👉"+ error.message
+        }
 }
 
 export async function userOut(){
-    console.log("You are out!")
     var messages = ["Bye! Have a good day!" ,"See ya!"]
-    channel.send( messages[Math.floor( Math.random() * messages.length )]);
-
     allCrons.forEach( item => { item.stop() })
     allCrons = []; 
+    return messages[Math.floor( Math.random() * messages.length )]
 }
 
+//⬜
 async function askBusy( _maxCount , tasks , moveGoal ){
     if( tasks.length > _maxCount ){
         const messages = [`😲You are too busy today!
 Do you want me to move some tasks to tmr?`];
         var leftArr = tasks.slice(_maxCount) ;
-        channel.send( messages[Math.floor( messages.length * Math.random() )] )
-        stored.yesAction = async() =>{
+        yesAction["askBusy"] = async() =>{
             leftArr.forEach(async task =>{
                 try{
                     await notion.parent( task, moveGoal )
                 }catch(error){
-                    channel.send("🤷🏽‍♀️ Something went wrong. " ,error.message)
+                    return`🤷🏽‍♀️ Something went wrong. 👉${error.message}`
                 }
             })
-            channel.send('Yay! You have less tasks for today now!')
+            return ('Yay! You have less tasks for today now!')
         }
+        return  messages[Math.floor( messages.length * Math.random() )] 
     }
 }
 
 export async function SearchDictionary( mm, entitie , traits ){
+
     try{
         var myDictionaries = await notion.datas.filter( data => notion.groupFilter(data,"Dictionary" ) )
         var myDictionary = myDictionaries[0]
@@ -811,7 +802,6 @@ export async function SearchDictionary( mm, entitie , traits ){
         var Headers = await notion.getChildren( myDictionary );
         Headers = Headers.filter( header => header[header.type].text.length > 0 && header.has_children )
         //Headers = Headers.map( header => {return {[header[header.type].text[0].plain_text.split(" ")]:header}} )
-    
         var search_keys = Object.keys(entitie).map( text => text.toLowerCase() );
         var search_keywords = Object.values(entitie).map( text => text.toLowerCase() )
         
@@ -819,7 +809,7 @@ export async function SearchDictionary( mm, entitie , traits ){
             var header_keywords = header[header.type].text[0].plain_text.split(" ").map( text => text.toLowerCase() );
             return Variable.anyisIn(search_keywords , header_keywords ); 
         })
-    
+
         if( Headers.length > 0 ){
             // 0. get random item
             var header = Headers[Math.floor( Headers.length * Math.random() )]
@@ -827,7 +817,7 @@ export async function SearchDictionary( mm, entitie , traits ){
             // 1. get random children
             var ChildBlock = children[Math.floor( children.length * Math.random() )]
             var textElements = Object.values(ChildBlock[ChildBlock.type])[0]
-            
+
             textElements = textElements.map( text => {
                 if(text.href){ return `[${text.plain_text}](${text.href})` }
                 else{ return text.plain_text}
@@ -835,40 +825,29 @@ export async function SearchDictionary( mm, entitie , traits ){
     
             var foundInfo = ""
             textElements.forEach(text => foundInfo += text )
-    
+            
             // 2. Send
-            var _embed = new MessageEmbed();
+            var _embed = await new MessageEmbed();
             _embed.setTitle(header[header.type].text[0].plain_text);
             _embed.setDescription(  foundInfo  );
-            channel.send({embeds : [_embed] })
             channel.send('Maybe check this out?')
-    
+            return ({embeds : [_embed] })
         }
-        else if( "emotion" in entitie || Variable.anyisIn(["positive","negative"], Object.values(traits)) ){
 
-            var randomWord = search_keys[ Math.floor(search_keys.length * Math.random()) ]
-            var gif = await Action.getGIF( randomWord );
-            channel.send( gif );
+        else if( "emotion" in entitie || Variable.anyisIn(["positive","negative"], Object.values(traits))){
+            return await getGIF( mm )
+        }
 
-        }
-        else if( mm.includes('recipe') ){
-            Action.getRecipe('healthy')
-        }
-        else if( Object.keys(entitie).includes('url') || Variable.isValidHttpUrl(mm) ){
-            ReadSlowly(entitie.url); 
-        }
-        else{
-            SearchGoogle(mm);
-        }
+
+
     }catch(err){
         channel.send("Something went wrong on SearchDictionary()")
-        channel.send(err.message)
-    }    
+        return (err.message)
+    }  
 }
 
 export async function SearchGoogle(mm){
     try{
-        channel.send( "Give me a sec.. I am searching for you" )
         var URL = "https://www.google.com/search?q=" + mm ;
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
@@ -890,17 +869,16 @@ export async function SearchGoogle(mm){
         else{
             _embed.setDescription(`[Link](${page._target._targetInfo.url})`);
         }
-        channel.send({embeds : [_embed] })
         await browser.close; 
+        return {embeds : [_embed] }; 
     }catch(err){
-        console.log(err)
-        channel.send("Something went wrong on SearchGoogle()")
         channel.send(err.message)
+        return "Hmmmm.. Something went wrong on SearchGoogle()";
     }
 }
 
 
-export async function ReadSlowly(URL){
+export async function ReadSlowly( URL ){
     var data = await axios.get(URL).then( res => {
         return extractor.lazy(res.data) 
     })
@@ -911,11 +889,11 @@ export async function ReadSlowly(URL){
     ArticleBody = ArticleBody.filter(t=>  t.length > 0 )
     if(ArticleBody.length >  0 ){
         var i = 0; 
-        stored.yesAction = () =>{
+        yesAction['ReadSlowly'] = () =>{
             const row = new MessageActionRow()
 			.addComponents(
 				new MessageButton()
-					.setCustomId('Next')
+					.setCustomId('ReadSlowly')
 					.setLabel('Next')
 					.setStyle('SUCCESS'),
 			);
@@ -923,19 +901,20 @@ export async function ReadSlowly(URL){
             var content = {content : ArticleBody[i] }
 
             i += 1;
+
             if( i == ArticleBody.length){
                 channel.send("Article is finished")
-                stored.yesAction =null; 
+                delete yesAction['ReadSlowly']
             }
             else{
                 content.components = [row]
             }
             return content;
         }
-        return stored.yesAction()
+        return yesAction['ReadSlowly']()
     }
     else{
-        channel.send("hm... I can't fetch article body")
+        return "hm... I can't fetch article body"
     }
 }
 
@@ -962,7 +941,7 @@ export async function helpEnglish(_word){
         text += `**[${_word}](${URL})**\n`
         text += meaning;
     }catch(err){
-        console.log("😲😲😲 Daum Page Load Failed  | ", err.message)
+        channel.send("Sorry, I am having trouble with a Dictionary😭 ", err.message)
     }
 
     // 1. Get Synonyms
@@ -972,12 +951,11 @@ export async function helpEnglish(_word){
         var synonym = await page.$$eval(".css-1kg1yv8", els =>els.map(el => el.textContent) );
         text += `\n`+ synonym 
     }catch(err){
-        console.log("😲😲😲 Saurus Page Load Failed  | ", err.message)
+        channel.send("Sorry, I am having trouble with Saurus😭", err.message)
     }
     await browser.close; 
 
     _embed.setDescription(text)
-    return _embed; 
-    //channel.send({embeds : [_embed] })
+    return {embeds : [_embed] }; 
 }
  

@@ -12,24 +12,20 @@
       "script" : ["Action.CreateNewLog()"]  
   },
   {
-      "entities" :[] , "intents" : ["chat"] , "traits" :{"sentiment":["negative"]} ,
-      "message" : ["Are you okay?"]
-  },
-  {
     "entities" :["yes"], "intents" : ["respond"] , "traits" :{} ,
-    "script" : ["Action.respondYes(entities)"] 
+    "script" : ["Action.respondYes(entities)"] , "onReply" : true
   },
   {
     "entities" :["no"], "intents" : ["respond"] , "traits" :{} ,
-    "script" : ["Action.respondNo(entities)"] 
+    "script" : ["Action.respondNo(entities)"] , "onReply" : true
   },
   {
     "entities" :["more"], "intents" : ["request"] , "traits" :{} ,
-    "script" : ["Action.requestMore(entities)"] 
+    "script" : ["Action.requestMore(entities)"] , "onReply" : true
   },
   {
     "entities" :["stop"], "intents" : ["request"] , "traits" :{} ,
-    "script" : ["Action.requestStop(entities)"] 
+    "script" : ["Action.requestStop(entities)"] , "onReply" : true
   },
   {
     "entities" :["reminder"], "intents" : ["request_notion_write"] , "traits" :{} ,
@@ -37,7 +33,7 @@
   },
   {
     "entities" :["twitter"], "intents" : ["request_share"] , "traits" :{} ,
-      "script": ["Action.tweetThat()"]
+      "script": ["Action.tweetThat(refMessage)"] , "onReply" : true
   },
   {
     "entities" :["reminder"], "intents" : ["request_notion_read"] , "traits" :{} ,
@@ -64,10 +60,6 @@
     "script": ["Action.TellMeAboutSocialStat(entities)"]
   },
   {
-    "entities" :["translate"], "intents" : ["request"] , "traits" :{} ,
-    "script": ["Action.translate(mm)"]
-  },
-  {
     "entities" :["move","left","task"], "intents" : ["request_notion_write"] , "traits" :{} ,
     "script": ["Action.fromLogToTasks()"]
   },
@@ -80,7 +72,11 @@
     "script": ["Action.createNewTask(entities.agenda_entry)"]
   },
   {
-    "entities" :[], "intents" : [] , "traits" :{} ,
+    "entities" :["cook"], "intents" : ["request_recipe"] , "traits" :{} ,
+    "script": ["Action.getRecipe( entities['search_query'] )"]
+  },
+  {
+    "entities" :[], "intents" : ["chat"] , "traits" :{} ,
     "script": ["Action.SearchDictionary(mm, entities , traits)"]
   }
   

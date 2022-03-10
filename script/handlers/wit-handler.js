@@ -1,9 +1,7 @@
 import 'dotenv/config' 
 import  Wit  from 'node-wit'
-import fs from 'fs'
 import { allisIn, anyisIn } from '../extra/util.js';
-const  talkDB = JSON.parse(fs.readFileSync('./script/extra/chat-dictionary.json'));
-
+//import { talkDB } from '../action/Chat.js';
 
 export const client = new Wit.Wit({
   accessToken: process.env.WIT_TOKEN,
@@ -46,12 +44,9 @@ export const traitFilter = ( _traits ) =>{
 }
 ///////////
 
-export const findIntention = async ( entities, intents, traits  ) =>{
-   // var findDB = null ; 
+export const findIntention = async ( entities, intents, traits , talkDB  ) =>{
 
     return new Promise( (resolve,error)=>{
-
-        var findDB = null ; 
 
         for(var i = 0; i< talkDB.length;){
 
@@ -90,7 +85,6 @@ export const findIntention = async ( entities, intents, traits  ) =>{
             var result = !([entitieIn, intentIn, traitKeyIn, traitValIn ].includes(false));
             if ( result ){ 
                 resolve(db);
-                //findDB = db; 
                 break;
             }
             else{  i += 1; }
