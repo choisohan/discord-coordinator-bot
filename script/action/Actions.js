@@ -783,7 +783,7 @@ Do you want me to move some tasks to tmr?`];
     else if( tasks.length < 4 ){
         var TASKS_URL = `https://www.notion.so/happpingmin/30ddc8bbffcc481cb702da35789f3cf5?v=f6894f5cc1d246a0b49179d270748e2e`
         channel.send(`You seems like free, check out Tasks Page`)
-        channel.send({embeds : [new MessageEmbed().setDescription(`[Tasks](${TASKS_URL}`) ]})
+        channel.send({embeds : [new MessageEmbed().setDescription(`[Tasks](${TASKS_URL})`) ]})
     }
 }
 

@@ -52,10 +52,6 @@
     "script": ["Action.userOut()"]
   },
   {
-    "entities" :[], "intents" : ["request_location"] , "traits" :{} ,
-    "script": ["Action.TellMeAboutLocation(entities)"]
-  },
-  {
     "entities" :[], "intents" : ["request_SNS_read"] , "traits" :{} ,
     "script": ["Action.TellMeAboutSocialStat(entities)"]
   },
@@ -74,6 +70,10 @@
   {
     "entities" :["cook"], "intents" : ["request_recipe"] , "traits" :{} ,
     "script": ["Action.getRecipe( entities['search_query'] )"]
+  },
+  {
+    "entities" :[], "intents" : ["request_location"] , "traits" :{} ,
+    "script": ["Action.TellMeAboutLocation(entities)"]
   },
   {
     "entities" :[], "intents" : ["chat"] , "traits" :{} ,
