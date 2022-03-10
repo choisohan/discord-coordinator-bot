@@ -4,7 +4,7 @@ import { channel } from "../../bot.js"//"../handlers/discord-handler.js";
 import { CronJob } from 'cron'
 import { tweet } from "../handlers/twitter-handler.js";
 import  weather from 'weather-js';
-import { MessageEmbed, MessageButton , MessageActionRow} from 'discord.js';
+import { MessageEmbed, MessageButton , MessageActionRow, CommandInteractionOptionResolver} from 'discord.js';
 import moment from 'moment';
 import pkg from 'puppeteer';
 import * as Variable from '../extra/util.js';
@@ -191,49 +191,44 @@ var getCalendar = (wit_datetime ) =>{
 
 export async function initCrons( pages ){
     pages = pages.filter( d => d.properties.Unit.select == null || ['minute','hour','day'].includes(d.properties.Unit.select.name)    )
-
-        
     pages.forEach(  async reminder => {
-        var blocks = await notion.getChildren( reminder );
-        blocks = blocks
-        .map( block => {return {[block.type]:
-            block.type =="image" ? block[block.type].external.url :
-            block.type =="video" ? block[block.type].external.url :
-            block[block.type].text
-                .map( item => item.plain_text)[0]
-        }})
-        .filter( block => Object.values(block)[0] != undefined )
-
         // check script is in
-        var scripts = blocks.filter( block => Object.keys(block)[0] == "callout"  )
-        var messages = blocks.filter( block => !scripts.includes(block))
-        messages= messages.map( block => Object.values(block)[0] )
-        scripts= scripts.map( block => Object.values(block)[0] )
         var cronTime = reminder.properties['Cron Time'].formula.string;
-        var name = reminder.properties['Name'].title[0].plain_text 
-        var cron = new CronJob( cronTime , ()=>{
-            var message = messages.length > 0 ? messages[ Math.floor( messages.length * Math.random() )]  :  "it's time for "+ name +" ✨"
-           var sendMessage = channel.send( message )
-           intervals.push(setInterval(sendMessage, 3000 ))
-
-            yesAction["initCrons"] = () =>{
-                return "Good Job!";
-                //clearInterval(interval);
-
-            }
-            
-
-            if( scripts.length > 0 ){
-                try{
-                    eval(scripts[Math.floor( scripts.length * Math.random() )]  )
-                }catch(error){
-                    channel.send( `🤷🏽‍♀️ Something went wrong.${reminder.Name.title[0].plain_text} : ${error.message}` ) 
-                }                             
-            }     
-        }, null, null , process.env.TIMEZONE);
+        var cron = new CronJob( cronTime , async function(){
+            channel.send("🔔ping")
+            await sendNotification(reminder.id) 
+        } , null, null , process.env.TIMEZONE);
         allCrons.push(cron);
         cron.start(); 
     })
+    //channel.send(`I am going to ping ⏰${pages.length} amount of reminders`);
+}
+
+async function sendNotification(page_id){
+    var page = await notion.getPageById(page_id)
+    var name = page.properties['Name'].title[0].plain_text 
+    var blocks = await notion.getChildren( page );
+    blocks = blocks.map( block => {
+        return {  [block.type]:
+            block.type =="image" ? block[block.type].external.url :
+            block.type =="video" ? block[block.type].external.url :
+            block[block.type].text.map( item => item.plain_text)[0]  }})
+                                .filter( block => Object.values(block)[0] != undefined )
+
+    var scripts = blocks.filter( block => Object.keys(block)[0] == "callout"  )
+    var messages = blocks.filter( block => !scripts.includes(block))
+    scripts = scripts.map( block => Object.values(block)[0] )
+    messages = messages.map( block => Object.values(block)[0] )
+    var message = messages.length > 0 ? messages[ Math.floor( messages.length * Math.random() )]  :  "it's time for "+ name +" ✨"
+    channel.send( message );
+
+    if(scripts.length >0 ){
+        await eval(scripts[0])
+    }
+
+
+    //intervals.push(setInterval(sendMessage, 3000 ))
+    
 }
 
 export async function respondYes( _entitie, _id ){
@@ -716,8 +711,8 @@ export async function botIn(){
     // When a bot initiate, all the reminder except daily event starts.
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
     reminders = await reminders.filter(data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
-   // initCrons(reminders);  
-   //send("what is today's todo?")
+    initCrons(reminders);  
+   //send("I feel blue")//⬜
    //channel.send({content:":D",activity:[ "🏰🏰🏰"]}).then(msg => console.log( msg ))
     
 }
@@ -730,6 +725,7 @@ export async function userIn(){
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
     reminders = reminders.filter( data => data.properties.Unit.select == null || ['minute','hour','day'].includes(data.properties.Unit.select.name)    )
     initCrons(reminders); 
+    channel.send(`I will let you know 🔔${reminders.length}'s reminders today`)
 
     var _embed = new MessageEmbed()
     _embed.setTitle(` ♥ Let's start Today `)
@@ -795,44 +791,47 @@ export async function SearchDictionary( mm, entitie , traits ){
     
         var Headers = await notion.getChildren( myDictionary );
         Headers = Headers.filter( header => header[header.type].text.length > 0 && header.has_children )
-        //Headers = Headers.map( header => {return {[header[header.type].text[0].plain_text.split(" ")]:header}} )
-        var search_keys = Object.keys(entitie).map( text => text.toLowerCase() );
-        var search_keywords = Object.values(entitie).map( text => text.toLowerCase() )
-        
+        var searchThese =[];
+        Object.values(entitie).forEach( text => text.toLowerCase().split(" ").forEach( t => searchThese.push(t) ))
         Headers =  Headers.filter( header =>{
             var header_keywords = header[header.type].text[0].plain_text.split(" ").map( text => text.toLowerCase() );
-            return Variable.anyisIn(search_keywords , header_keywords ); 
+            return Variable.anyisIn(searchThese , header_keywords ); 
         })
-
+        
         if( Headers.length > 0 ){
             // 0. get random item
             var header = Headers[Math.floor( Headers.length * Math.random() )]
-            var children = await notion.getChildren( header );
+            var children = await notion.getChildren( header ); 
             // 1. get random children
             var ChildBlock = children[Math.floor( children.length * Math.random() )]
-            var textElements = Object.values(ChildBlock[ChildBlock.type])[0]
+            var textElements =  ChildBlock[ChildBlock.type].text ;//.map(b => b.text)
 
-            textElements = textElements.map( text => {
-                if(text.href){ return `[${text.plain_text}](${text.href})` }
-                else{ return text.plain_text}
-            } )
-    
-            var foundInfo = ""
-            textElements.forEach(text => foundInfo += text )
-            
-            // 2. Send
-            var _embed = await new MessageEmbed();
-            _embed.setTitle(header[header.type].text[0].plain_text);
-            _embed.setDescription(  foundInfo  );
-            channel.send('Maybe check this out?')
-            return ({embeds : [_embed] })
+            if(textElements.length == 1 ){
+                return textElements[0].plain_text
+            }
+            else{
+                textElements = textElements.map( text => {
+                    if(text.href){ return `[${text.plain_text}](${text.href})` }
+                    else{ return text.plain_text}
+                } )
+        
+                var foundInfo = ""
+                textElements.forEach(text => foundInfo += text )
+                
+                // 2. Send
+                
+                var _embed = await new MessageEmbed();
+                _embed.setTitle(header[header.type].text[0].plain_text);
+                _embed.setDescription(  foundInfo  );
+                channel.send('Maybe check this out?')
+                return await {embeds : [_embed] }
+            }
+
         }
 
         else if( "emotion" in entitie || Variable.anyisIn(["positive","negative"], Object.values(traits))){
             return await getGIF( mm )
         }
-
-
 
     }catch(err){
         channel.send("Something went wrong on SearchDictionary()")

@@ -17,6 +17,9 @@ class notionClient{
         )
 
     }
+    async getPageById(page_id){
+        return await NOTION.pages.retrieve({page_id : page_id})
+    }
 
     async appendChild( parent , children ){
         await NOTION.blocks.children.append({

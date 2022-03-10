@@ -76,7 +76,7 @@
     "script": ["Action.TellMeAboutLocation(entities)"]
   },
   {
-    "entities" :[], "intents" : ["chat"] , "traits" :{} ,
+    "entities" :[], "intents" : [] , "traits" :{} ,
     "script": ["Action.SearchDictionary(mm, entities , traits)"]
   }
   

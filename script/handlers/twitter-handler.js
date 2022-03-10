@@ -13,20 +13,10 @@ export var client = new TwitterApi({
 
 const twitterClient = client.readWrite;
 
-//
-/*
-const mediaIds = await Promise.all([
-    twitterClient.v1.uploadMedia('tempFolder/tmp_glttt92xzhz51.png'),
-  ]);
-  
-await twitterClient.v1.tweet('auto tweet test ', { media_ids: mediaIds });
-*/ 
-//
-
 function writeToFile( _URL ){
     return new Promise(async (resolve, reject)=>{
         var response = await axios({method: 'get',url: _URL , responseType: 'stream'});
-        var stream = fs.createWriteStream('tempFolder/tmp_' + _URL.split('/').at(-1)) ;
+        var stream = fs.createWriteStream('temp/tmp_' + _URL.split('/').at(-1)) ;
         response.data.pipe(stream);
         stream.on("finish",()=>{
             resolve(stream)

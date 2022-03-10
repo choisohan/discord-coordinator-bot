@@ -65,6 +65,9 @@ export const findIntention = async ( entities, intents, traits , talkDB  ) =>{
             if( 'intents' in db && db.intents.length > 0 ) {
                 intentIn = allisIn(intents , db.intents)
             }
+            else{
+                intentIn = true
+            }
     
             // 3. 
             if('traits' in db && Object.keys(db.traits).length > 0   )
@@ -83,6 +86,7 @@ export const findIntention = async ( entities, intents, traits , talkDB  ) =>{
         
             // fin 
             var result = !([entitieIn, intentIn, traitKeyIn, traitValIn ].includes(false));
+            //console.log( entitieIn, intentIn, traitKeyIn, traitValIn )
             if ( result ){ 
                 resolve(db);
                 break;

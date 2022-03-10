@@ -117,5 +117,3 @@ prop("_minute") + " " + prop("_hour") + " " + prop("_day") + " " + prop("_month"
 - if there is the callout block on the page, it will be recognized as a code block(which is not supported in notion API yet). so create the code block and write any javascript. this will fired when cron job is fired. While you can write anything on the block but except "", ''. Don't use them, **you must use backtick ` instead**.
 
 ![](/src/callout.JPG)
-
-

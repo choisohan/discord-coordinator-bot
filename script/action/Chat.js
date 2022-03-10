@@ -44,16 +44,14 @@ export async function send( message , reference ){
     var entities = Wit.entitiesFilter(entities); 
     var intents = Wit.intentFilter(intents); 
     var traits = Wit.traitFilter(traits); 
-    //console.log( "🌈",entities )
     var findDB =  await Wit.findIntention( entities, intents, traits, DB ) ; 
-    //console.log( findDB )
-    if('message' in findDB ){
-        var rand_message = findDB.message[ Math.floor(findDB.message.length * Math.random()) ] ;
-        channel.send(rand_message) ;
-    }
+
     if('script' in findDB ){
-        var response = await eval(findDB.script[0] );
-        channel.send( response )
+        channel.send(".").then(async msg=>{
+          var response = await eval(findDB.script[0] );
+          msg.edit( response )
+        })
+
     }})}
   }
 
