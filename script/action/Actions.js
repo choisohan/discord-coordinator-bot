@@ -470,24 +470,23 @@ export var TellMeAboutTasks = async (_entitie) =>{
     
         var worklog = await getTodaysWorklog();
         var columns = await notion.getColumns( worklog ) ; 
-    
-        return Promise.resolve( getTasks(day,columns ) ).then( async ([allTodo, leftTodo] )=>{
-            var text = "" ; 
-            var _newEmbed = await new MessageEmbed();
-            _newEmbed.setTitle (  "🌈 " + date.toDateString()  ); 
-            if("how_many" in _entitie){
-                text = "You have  " + leftTodo.length.toString() +"/" + allTodo.length.toString() +" tasks" ;
-            }
-            else{
-                stored.datas = await !"remain" in _entitie ? allTodo : leftTodo ;
-                text = await notion.blocks_to_text( stored.datas );  
-            }
-            text += lineChange += `[📙${worklog.properties.Name.title[0].plain_text}](${worklog.url})`
-            _newEmbed.setDescription( text ); 
-            var nextColumn = columns[Math.min(day + 1, columns.length)]
-            askBusy( 10 ,leftTodo , nextColumn ); 
-            return {embeds : [_newEmbed] }
-        })
+        
+        var [allTodo, leftTodo] = await getTasks(day,columns ) 
+        var text = "" ; 
+        var _newEmbed = await new MessageEmbed();
+        _newEmbed.setTitle (  "🌈 " + date.toDateString()  ); 
+        if("how_many" in _entitie){
+            text = "You have  " + leftTodo.length.toString() +"/" + allTodo.length.toString() +" tasks" ;
+        }
+        else{
+            stored.datas = await !"remain" in _entitie ? allTodo : leftTodo ;
+            text = await notion.blocks_to_text( stored.datas );  
+        }
+        text += lineChange += `[📙${worklog.properties.Name.title[0].plain_text}](${worklog.url})`
+        _newEmbed.setDescription( text ); 
+        var nextColumn = columns[Math.min(day + 1, columns.length)]
+        askBusy( 10 ,leftTodo , nextColumn ); 
+        return {embeds : [_newEmbed] }
         
     }catch(error){
         return "😧Something went wrong "+ error.message
@@ -718,7 +717,7 @@ export async function botIn(){
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
     reminders = await reminders.filter(data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
    // initCrons(reminders);  
-   //send("hi")
+   //send("what is today's todo?")
    //channel.send({content:":D",activity:[ "🏰🏰🏰"]}).then(msg => console.log( msg ))
     
 }
@@ -732,8 +731,9 @@ export async function userIn(){
     reminders = reminders.filter( data => data.properties.Unit.select == null || ['minute','hour','day'].includes(data.properties.Unit.select.name)    )
     initCrons(reminders); 
 
-    var _embed = new MessageEmbed().setTitle(` ♥ Let's start Today `)
-    await getWeather( _embed , 'Vancouver, BC');
+    var _embed = new MessageEmbed()
+    _embed.setTitle(` ♥ Let's start Today `)
+    _embed = await getWeather( _embed , 'Vancouver, BC');
 
     // 1. todo 
     try{
@@ -742,28 +742,17 @@ export async function userIn(){
         var day = new Date().getDay()
         day = day == 0 ? 6: day - 1; 
         var [allTodo , leftTodo] =  await getTasks(day, columns ) ;
-        //Promise.resolve( getTasks(day, columns ) ).then( async (  [allTodo , leftTodo]  ) =>{
+        var todos = await notion.blocks_to_text(allTodo);     
+        _embed.addFields({name : "Tasks", value : todos})
+        _embed.addFields({name : "Count", value : `${allTodo.length-leftTodo.length}/${allTodo.length}`})
     
-            var todos = await notion.blocks_to_text(allTodo);     
-            _embed.addFields({name : "Tasks", value : todos})
-            _embed.addFields({name : "Count", value : `${allTodo.length-leftTodo.length}/${allTodo.length}`})
-        
-            // 9. if task is too many
-            var nextColumn = columns[Math.min(day + 1, columns.length)]
-            askBusy(10, leftTodo , nextColumn ); 
-    
-            if( allTodo.length-leftTodo.length < 5 ){
-                var TASKS_URL = `https://www.notion.so/happpingmin/30ddc8bbffcc481cb702da35789f3cf5?v=f6894f5cc1d246a0b49179d270748e2e`
-                channel.send(`You seems like free, check out Tasks Page`)
-                channel.send({embeds :new MessageEmbed().setDescription(`[Tasks](${TASKS_URL}`) })
-            }
-            //})
-            return {embeds : [_embed] }
-            
-
-        }catch(error){
-            return "Something went wrong 👉"+ error.message
-        }
+        // 9. if task is too many
+        var nextColumn = columns[Math.min(day + 1, columns.length)]
+        askBusy(10, leftTodo , nextColumn );       
+        return { embeds : [ _embed] }
+    }catch(error){
+        return "Something went wrong 👉"+ error.message
+    }
 }
 
 export async function userOut(){
@@ -773,7 +762,7 @@ export async function userOut(){
     return messages[Math.floor( Math.random() * messages.length )]
 }
 
-//⬜
+
 async function askBusy( _maxCount , tasks , moveGoal ){
     if( tasks.length > _maxCount ){
         const messages = [`😲You are too busy today!
@@ -787,9 +776,14 @@ Do you want me to move some tasks to tmr?`];
                     return`🤷🏽‍♀️ Something went wrong. 👉${error.message}`
                 }
             })
-            return ('Yay! You have less tasks for today now!')
+            channel.send('Yay! You have less tasks for today now!')
         }
-        return  messages[Math.floor( messages.length * Math.random() )] 
+        channel.send( messages[Math.floor( messages.length * Math.random() )]) 
+    }
+    else if( tasks.length < 4 ){
+        var TASKS_URL = `https://www.notion.so/happpingmin/30ddc8bbffcc481cb702da35789f3cf5?v=f6894f5cc1d246a0b49179d270748e2e`
+        channel.send(`You seems like free, check out Tasks Page`)
+        channel.send({embeds : [new MessageEmbed().setDescription(`[Tasks](${TASKS_URL}`) ]})
     }
 }
 
