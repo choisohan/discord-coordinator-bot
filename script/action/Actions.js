@@ -709,7 +709,8 @@ export async function TellMeAboutSocialStat(_entitie){
     
     const browser = await puppeteer.launch({
         headless:false,
-        args: ["--no-sandbox"]
+        args: ["--no-sandbox"],
+        ignoreDefaultArgs: ['--disable-extensions']
     });
     const page = await browser.newPage();
 
