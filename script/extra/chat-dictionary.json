@@ -64,8 +64,8 @@
     "script": ["Action.inspectOldTasks(entities)"]
   },
   {
-    "entities" :["create","task","agenda_entry"], "intents" : ["request_notion_write"] , "traits" :{} ,
-    "script": ["Action.createNewTask(entities.agenda_entry)"]
+    "entities" :["create","task"], "intents" : ["request_notion_write"] , "traits" :{} ,
+    "script": ["Action.createNewTask(entities)"]
   },
   {
     "entities" :["cook"], "intents" : ["request_recipe"] , "traits" :{} ,

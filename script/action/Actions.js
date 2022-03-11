@@ -26,15 +26,48 @@ var mmdd = (MOMENT) =>{
     return week[1] + week[2]
 }
 
-
-export async function createNewTask( _name ){
+//yes
+export async function createNewTask( _entitie ){
     try{
-        var style ={ Name : _name, Group: "Task" }
-        var newPage = await notion.createNew(process.env.NOTION_DB_ID, style, null); 
-        notion.datas.push(newPage)
-        var _newEmbed = new MessageEmbed();
-        _newEmbed.setDescription(`✨The new tasks [${_name}](${newPage.url})`)
-        return {embeds : [_newEmbed] } ;
+
+        var _now = new Date(); 
+        var isThisWeek = 'datetime' in _entitie ?
+                        new Date(_now.setDate( _now.getDate() + 7 - _now.getDay() )) >  new Date(_entitie.datetime)
+                        : false;
+
+
+        yesAction["createNewTask"] = async () =>{
+            if( isThisWeek ){ // 1-A : this will create on today's log
+                var worklog = await getTodaysWorklog();
+                var columns = await notion.getColumns( worklog );
+                var day = getDayMondayStart ( moment(_entitie.datetime )) 
+                var block = {
+                    object:'block',
+                    type : 'to_do',
+                    to_do : {text :[{type : 'text', text : {content: _entitie.agenda_entry }} ]  }
+                }
+                await notion.appendChild( columns.at(day) , [block]  );    
+
+                var _embed = new MessageEmbed();
+                 _embed.setDescription(`The new tasks [${ _entitie.agenda_entry }](${worklog.url}) on this week`)
+                return { embeds : [_embed] } ;    
+            }
+            else{   // 1-B : this will create on tasks database
+                var style ={ Name : _entitie.agenda_entry , Group: "Task" }
+                if('datetime' in _entitie ){
+                    style.Date= {start : new moment( _entitie.datetime ) }
+                }
+                var newPage = await notion.createNew(process.env.NOTION_DB_ID, style, null); 
+                notion.datas.push(newPage)
+                var _embed = new MessageEmbed();
+                _embed.setDescription(`The new tasks [${ _entitie.agenda_entry }](${newPage.url})`)
+                return { embeds : [_embed] } ;
+            }
+        }
+        
+        // 0. send this first
+        return `Do you want me to add this ${_entitie.agenda_entry} as a new task?`
+
     }catch(error){
         return "Something went wrong " + error.message
     }
@@ -46,7 +79,6 @@ export async function inspectOldTasks(_entitie){
 
         var worklog = await getTodaysWorklog();
         var columns = await notion.getColumns( worklog );
-        //var today = timezone( new Date() ).getDay() - 1 ; 
         var today = getDayMondayStart(now(new Date));
 
         var tasks = notion.datas.filter( data => notion.groupFilter(data, "Task") )
@@ -192,16 +224,17 @@ var getCalendar = (wit_datetime ) =>{
 export async function initCrons( pages ){
     pages = pages.filter( d => d.properties.Unit.select == null || ['minute','hour','day'].includes(d.properties.Unit.select.name)    )
     pages.forEach(  async reminder => {
-        // check script is in
         var cronTime = reminder.properties['Cron Time'].formula.string;
         var cron = new CronJob( cronTime , async function(){
-            channel.send("🔔ping")
             await sendNotification(reminder.id) 
         } , null, null , process.env.TIMEZONE);
         allCrons.push(cron);
         cron.start(); 
     })
-    //channel.send(`I am going to ping ⏰${pages.length} amount of reminders`);
+}
+
+export async function reinitCron(){
+    //⬜
 }
 
 async function sendNotification(page_id){
@@ -712,7 +745,7 @@ export async function botIn(){
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
     reminders = await reminders.filter(data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
     initCrons(reminders);  
-   //send("I feel blue")//⬜
+    //send(`can you add new tasks "run fast" on next monday?`)//⬜
    //channel.send({content:":D",activity:[ "🏰🏰🏰"]}).then(msg => console.log( msg ))
     
 }
