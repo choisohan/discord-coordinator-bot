@@ -726,19 +726,18 @@ export async function TellMeAboutSocialStat(_entitie){
     
         var URL = 'https://www.instagram.com/happping_min/'
         console.log("💛URL", URL )
-        await page.goto(URL, {
-            waitUntil: "load",timeout: 0
-        });
-        await page.waitForSelector('.Y8-fY'); 
+        const navigationPromise = page.waitForNavigation({waitUntil: "domcontentloaded"});
+        await page.goto(URL, {waitUntil: "load",timeout: 0});
+        await navigationPromise;
+            //await page.waitForSelector('.Y8-fY'); 
         stats.instagram = await page.$$eval('.Y8-fY', els => els.map(el => el.textContent ) ); //posts, followers, following
         stats.instagram = stats.instagram[1];
         
         var URL = 'https://twitter.com/happping_min'
         console.log("💛URL", URL )
-        await page.goto(URL, {
-            waitUntil: "load",timeout: 0
-        });
-        await page.waitForSelector('.css-4rbku'); 
+        await page.goto(URL, {waitUntil: "load",timeout: 0});
+        await navigationPromise;
+            //await page.waitForSelector('.css-4rbku'); 
         stats.twitter = await page.$$eval('.css-4rbku5', els => els.map(el => el.textContent ).filter(el => el.includes("Followers") ) );
         stats.twitter = stats.twitter[0]
         console.log("❤️stats", stats )
