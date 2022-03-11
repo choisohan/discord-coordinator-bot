@@ -375,35 +375,40 @@ export async function createReminder(entitie){
 
 
 export var tellMeAboutReminders = async () =>{
-    // 1. get
-    var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
-    reminders = reminders.map( item => {
-        return {  Name : item.properties.Name.title[0].plain_text,
-            Date : item.properties.Date.date ? item.properties.Date.date.start : null ,
-            Recurring : item.properties.Recurring ? item.properties.Recurring.number : null ,
-            Unit : item.properties.Unit.select ? item.properties.Unit.select.name   : null ,
-            URL : item.url,
-            id: item.id,
-            cronTime: item.properties['Cron Time'].formula.string
+    try{
+        // 1. get
+        var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
+        reminders = reminders.map( item => {
+            return {  Name : item.properties.Name.title[0].plain_text,
+                Date : item.properties.Date.date ? item.properties.Date.date.start : null ,
+                Recurring : item.properties.Recurring ? item.properties.Recurring.number : null ,
+                Unit : item.properties.Unit.select ? item.properties.Unit.select.name   : null ,
+                URL : item.url,
+                id: item.id,
+                cronTime: item.properties['Cron Time'].formula.string
+            }
+        
+        })
+
+        // 2. Create Message 
+        var _embed = new MessageEmbed;
+        _embed.setTitle("⏰ All Reminders")
+        var _arr = [] 
+                    
+        for( var i = 0 ; i < reminders.length ; i ++ ){
+            //var _time = reminders[i].Date;
+            //var _name = reminders[i].Name
+            //_embed.addFields({ name : _name , value : `[ ${i}. ${reminders[i].cronTime} ](${reminders[i].URL} )` } )
+            _arr.push(`[ ${reminders[i].Name} ](${reminders[i].URL} )    ${reminders[i].cronTime} `)
         }
-    
-    })
+        _embed.setDescription(await Variable.arrayToString2(_arr) ); 
 
-    // 2. Create Message 
-    var _embed = new MessageEmbed;
-    _embed.setTitle("⏰ All Reminders")
-    var _arr = [] 
-                 
-    for( var i = 0 ; i < reminders.length ; i ++ ){
-        //var _time = reminders[i].Date;
-        //var _name = reminders[i].Name
-        //_embed.addFields({ name : _name , value : `[ ${i}. ${reminders[i].cronTime} ](${reminders[i].URL} )` } )
-        _arr.push(`[ ${reminders[i].Name} ](${reminders[i].URL} )    ${reminders[i].cronTime} `)
+        stored.datas = reminders; 
+        return {embeds : [_embed] };
+
+    }catch(err){
+        return err.message
     }
-    _embed.setDescription(await Variable.arrayToString2(_arr) ); 
-
-    stored.datas = reminders; 
-    return {embeds : [_embed] };
 
 }
 
@@ -548,66 +553,71 @@ var notionDateToDate = (stringDate) =>{
 
 
 export var TellMeAboutProject = async (_entitie)=>{
-
-    var AllProjects = await notion.datas.filter( data => notion.groupFilter(data,"Project" ) )
-    var Now = new Date()//now(new Date()) //timezone(new Date())
-    var Scheduled = AllProjects.filter( p => p.properties.Date.date != null && p.properties.Date.date.end != null )
-    var Completed = Scheduled.filter( p => Now.getTime() >= notionDateToDate(p.properties.Date.date.end).getTime() )
-
-    var Incompleted = Scheduled.filter( p => !Completed.includes(p));
-
-    var Project ; 
-    if ('next' in _entitie ){
-        Project = Incompleted[1] 
-    }
-    else if ( 'previous' in _entitie ){
-        Project = Completed.at(-1)
-    }
-    else{
-        Project = Incompleted[0] 
-    }
-
-    if( Project ){
-        //found
-        var title = Project.properties.Name.title[0].plain_text; 
-        var start = Project.properties.Date.date.start; 
-        var end = Project.properties.Date.date.end; 
-        //var Now = now(new Date())
-        var leftDays =  Math.floor( (notionDateToDate(end) - new Date() )/(1000 * 60 * 60 * 24) );
-        leftDays = leftDays < 2 ? leftDays.toString() +" day" :leftDays.toString() +" days"
-        
-        var _embeded = new MessageEmbed()
-        _embeded.setDescription(`[ 🏞️ **${title}** ](${Project.url})`)
-        var text =[]
-        
-        if('next' in _entitie){
-            const startIn = moment(start).endOf('day').fromNow();
-            text.push("◽ Start in " + startIn)
+    try{
+        var AllProjects = await notion.datas.filter( data => notion.groupFilter(data,"Project" ) )
+        var Now = new Date()//now(new Date()) //timezone(new Date())
+        var Scheduled = AllProjects.filter( p => p.properties.Date.date != null && p.properties.Date.date.end != null )
+        var Completed = Scheduled.filter( p => Now.getTime() >= notionDateToDate(p.properties.Date.date.end).getTime() )
+    
+        var Incompleted = Scheduled.filter( p => !Completed.includes(p));
+    
+        var Project ; 
+        if ('next' in _entitie ){
+            Project = Incompleted[1] 
         }
         else if ( 'previous' in _entitie ){
-            text.push("◽ Started " + start )
-            text.push("◽ Due is " + end )
+            Project = Completed.at(-1)
         }
         else{
-            text.push("◽ Due is " + leftDays + lineChange)
-
-            //_embeded.addFields({name :'⭐Left' , value : leftDays, inline : true })
+            Project = Incompleted[0] 
+        }
+    
+        if( Project ){
+            //found
+            var title = Project.properties.Name.title[0].plain_text; 
+            var start = Project.properties.Date.date.start; 
+            var end = Project.properties.Date.date.end; 
+            //var Now = now(new Date())
+            var leftDays =  Math.floor( (notionDateToDate(end) - new Date() )/(1000 * 60 * 60 * 24) );
+            leftDays = leftDays < 2 ? leftDays.toString() +" day" :leftDays.toString() +" days"
+            
+            var _embeded = new MessageEmbed()
+            _embeded.setDescription(`[ 🏞️ **${title}** ](${Project.url})`)
+            var text =[]
+            
+            if('next' in _entitie){
+                const startIn = moment(start).endOf('day').fromNow();
+                text.push("◽ Start in " + startIn)
+            }
+            else if ( 'previous' in _entitie ){
+                text.push("◽ Started " + start )
+                text.push("◽ Due is " + end )
+            }
+            else{
+                text.push("◽ Due is " + leftDays + lineChange)
+    
+                //_embeded.addFields({name :'⭐Left' , value : leftDays, inline : true })
+            }
+    
+           var Text = ''
+           for(var i = 0; i < text.length; i++){
+                Text += text[i];
+               if( i != text.length ){    Text+= lineChange; }
+           }
+    
+            _embeded.addFields({name :'Information' , value : Text })
+            return {embeds : [_embeded] }
+        }
+        else{
+            return (
+    `You don't have any specific project assigned!
+    Do anything you like!❤`)
         }
 
-       var Text = ''
-       for(var i = 0; i < text.length; i++){
-            Text += text[i];
-           if( i != text.length ){    Text+= lineChange; }
-       }
+    }catch(err){
+        return err.message
+    }
 
-        _embeded.addFields({name :'Information' , value : Text })
-        return {embeds : [_embeded] }
-    }
-    else{
-        return (
-`You don't have any specific project assigned!
-Do anything you like!❤`)
-    }
  
 
 }
@@ -706,31 +716,36 @@ export async function getRecipe(_keywords){
 }
 
 export async function TellMeAboutSocialStat(_entitie){
+    try{
+        var stats = {}
     
-    var stats = {}
+        const browser = await puppeteer.launch({
+            args: ['--no-sandbox','--disable-setuid-sandbox']
+          })
+        const page = await browser.newPage();
     
-    const browser = await puppeteer.launch({
-        args: ['--no-sandbox','--disable-setuid-sandbox']
-      })
-    const page = await browser.newPage();
-
-    var URL = 'https://www.instagram.com/happping_min/'
-    await page.goto(URL, {waitUntil: 'networkidle2'});
-    stats.instagram = await page.$$eval('.Y8-fY', els => els.map(el => el.textContent ) ); //posts, followers, following
-    stats.instagram = stats.instagram[1];
+        var URL = 'https://www.instagram.com/happping_min/'
+        await page.goto(URL, {waitUntil: 'networkidle2'});
+        stats.instagram = await page.$$eval('.Y8-fY', els => els.map(el => el.textContent ) ); //posts, followers, following
+        stats.instagram = stats.instagram[1];
+        
+        var URL = 'https://twitter.com/happping_min'
+        await page.goto(URL, {waitUntil: 'networkidle2'});
+        stats.twitter = await page.$$eval('.css-4rbku5', els => els.map(el => el.textContent ).filter(el => el.includes("Followers") ) );
+        stats.twitter = stats.twitter[0]
     
-    var URL = 'https://twitter.com/happping_min'
-    await page.goto(URL, {waitUntil: 'networkidle2'});
-    stats.twitter = await page.$$eval('.css-4rbku5', els => els.map(el => el.textContent ).filter(el => el.includes("Followers") ) );
-    stats.twitter = stats.twitter[0]
+    
+        var _embeded = new MessageEmbed()
+        _embeded.addFields( {name :"❤️Instagram" , value : stats.instagram  })
+        _embeded.addFields( {name :"❤️Twitter" , value :  stats.twitter   })
+    
+        await browser.close; 
+        return {embeds : [_embeded] }
 
+    }catch(err){
+        return err.message
+    }
 
-    var _embeded = new MessageEmbed()
-    _embeded.addFields( {name :"❤️Instagram" , value : stats.instagram  })
-    _embeded.addFields( {name :"❤️Twitter" , value :  stats.twitter   })
-
-    await browser.close; 
-    return {embeds : [_embeded] }
 }
 
 
