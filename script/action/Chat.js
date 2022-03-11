@@ -74,7 +74,7 @@ async function commandRequested(interaction){
       var response = await Action.ReadSlowly(input); 
       break;
     case "todo": //✅
-      var response = await Action.createNewTask(input); 
+      var response = await Action.createNewTask({agenda_entry: input}); 
       break;
     case "goog": //🔍
       var response = await Action.SearchGoogle(input); 

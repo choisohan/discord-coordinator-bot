@@ -9,6 +9,7 @@ The goal is creating the coordinator bot which manage the notion database and ex
 - [x] "Good Night", "Bye" : deactive the daily clonJobs
 - [x] "What is today's tasks?"
 - [x] "What is today's left tasks?"
+- [ ] "Can you create new tasks 'finish coding'"? ,"Add new tasks for laundry tomorrow"
 - [x] "What is today's project?"
 - [ ] "Can you change the current project due date?"
 - [x] "Can you remind me every an hour to stretching?"
@@ -70,6 +71,7 @@ BOT_TOKEN (discord) , NOTION_TOKEN , NOTION_DB_ID , WIT_TOKEN, TIMEZONE
     - _day: formula
     - _month: formula
     - _week : formula
+    - Week : multi-select
     - Cron Time: formula
 
 ### Formula for Clon Time
@@ -102,7 +104,7 @@ empty(prop("Unit")) ? if(month(prop("Date")) + month(prop("Date")) == 0, format(
 
 - _week :
 ```
-(prop("Unit") == "week") ? format(day(prop("Date"))) : "*"
+if(empty(prop("Week")), (prop("Unit") == "week") ? format(day(prop("Date"))) : "*", prop("Week"))
 ```
 
 
@@ -117,3 +119,13 @@ prop("_minute") + " " + prop("_hour") + " " + prop("_day") + " " + prop("_month"
 - if there is the callout block on the page, it will be recognized as a code block(which is not supported in notion API yet). so create the code block and write any javascript. this will fired when cron job is fired. While you can write anything on the block but except "", ''. Don't use them, **you must use backtick ` instead**.
 
 ![](/src/callout.JPG)
+
+
+
+----
+
+if(empty(prop("Unit")), if(empty(prop("Date")), prop("Edited"), prop("Date")), if(empty(prop("Date")), dateAdd(prop("Edited"), dateBetween(if(empty(prop("Date")), prop("Edited"), prop("Date")), now(), concat(prop("Unit"), "s")) / prop("Recurring"), concat(prop("Unit"), "s")), dateAdd(prop("Date"), dateBetween(if(empty(prop("Date")), prop("Edited"), prop("Date")), now(), concat(prop("Unit"), "s")) / prop("Recurring"), concat(prop("Unit"), "s"))))
+
+
+
+if(empty(prop("Unit")), if(empty(prop("Date")), dateAdd(prop("Edited"), 3, "months"), prop("Date")), if(empty(prop("Date")), dateAdd(prop("Edited"), dateBetween(if(empty(prop("Date")), prop("Edited"), prop("Date")), now(), concat(prop("Unit"), "s")) / prop("Recurring"), concat(prop("Unit"), "s")), dateAdd(prop("Date"), dateBetween(if(empty(prop("Date")), prop("Edited"), prop("Date")), now(), concat(prop("Unit"), "s")) / prop("Recurring"), concat(prop("Unit"), "s"))))

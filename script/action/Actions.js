@@ -25,19 +25,18 @@ var mmdd = (MOMENT) =>{
     var week = MOMENT.format('L').split('-');
     return week[1] + week[2]
 }
+var isThisWeek = DATE =>  {
+   // console.log( moment(DATE) - sunday(new Date()))
+    return moment(DATE)- sunday(new Date())  < 0 
+}
+//console.log(   "🥨",isThisWeek('2022-03-12' ))
 
 //yes
 export async function createNewTask( _entitie ){
     try{
 
-        var _now = new Date(); 
-        var isThisWeek = 'datetime' in _entitie ?
-                        new Date(_now.setDate( _now.getDate() + 7 - _now.getDay() )) >  new Date(_entitie.datetime)
-                        : false;
-
-
         yesAction["createNewTask"] = async () =>{
-            if( isThisWeek ){ // 1-A : this will create on today's log
+            if(  'datetime' in _entitie  && isThisWeek(new Date(_entitie.datetime)) ){ // 1-A : this will create on today's log
                 var worklog = await getTodaysWorklog();
                 var columns = await notion.getColumns( worklog );
                 var day = getDayMondayStart ( moment(_entitie.datetime )) 
@@ -224,6 +223,8 @@ var getCalendar = (wit_datetime ) =>{
 export async function initCrons( pages ){
     pages = pages.filter( d => d.properties.Unit.select == null || ['minute','hour','day'].includes(d.properties.Unit.select.name)    )
     pages.forEach(  async reminder => {
+        //var repeat = reminder.properties.Reapeat["multi_select"].map( r => r.name)
+       // console.log(repeat)
         var cronTime = reminder.properties['Cron Time'].formula.string;
         var cron = new CronJob( cronTime , async function(){
             await sendNotification(reminder.id) 
@@ -325,7 +326,7 @@ export async function createReminder(entitie){
 
     // 0. sort
     var _agenda = entitie.agenda_entry ? entitie.agenda_entry : "something" ;
-    var style = { Name : _agenda , Group: 'Reminder' , icon: "⏰"};
+    var style = { Name : _agenda , Group: 'Reminder' , icon: "🔔"};
     if('duration' in entitie){
         //it's recurring task
         style.Unit = Object.keys(entitie.duration)[0] ;
@@ -740,36 +741,76 @@ export async function getTodaysWorklog(){
     })
 }
 
+
+//|| isThisWeek(new Date(t.properties["Last Added"].date.start))
+
 export async function botIn(){
     // When a bot initiate, all the reminder except daily event starts.
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
     reminders = await reminders.filter(data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
-    initCrons(reminders);  
-    //send(`can you add new tasks "run fast" on next monday?`)//⬜
-   //channel.send({content:":D",activity:[ "🏰🏰🏰"]}).then(msg => console.log( msg ))
+    initCrons(reminders); 
+   // send(`Hello`)//⬜
+    //channel.send("I came back😛")
     
 }
 
+async function addScheduledTasks( columns, day ){
+    var tasks = await notion.datas.filter(data => notion.groupFilter(data,"Task") )
+    tasks = tasks.filter( t => t.properties['Next Date'].formula.date != null )
+    tasks = tasks.filter ( t => isThisWeek(new Date( t.properties['Next Date'].formula.date.start) )  )
 
+    for(var i = day; i < 7; i++){
+        var Tasks_of_the_day = tasks.filter( t =>{
+            if( t.properties.Unit.select != null && t.properties.Unit.select.name =="day"   ){  return true;    }
+            else{   return getDayMondayStart(moment(t.properties['Next Date'].formula.date.start)) == i  }
+        })
+
+        var Tasks_on_the_log = await notion.getChildren( columns[i] )
+        Tasks_on_the_log = await Tasks_on_the_log.filter(t => t.type =="to_do" && t["to_do"].text.length > 0 ).map( t=> t["to_do"].text[0].plain_text)
+        
+        Tasks_of_the_day = Tasks_of_the_day.filter( t=> !Tasks_on_the_log.includes( t.properties.Name.title[0].plain_text ))
+
+        if( Tasks_of_the_day.length > 0 ){
+            var blocks = Tasks_of_the_day.map( t =>{return {
+                object:'block',
+                type : 'to_do',
+                to_do : {text :[{type : 'text', text : {content: t.properties.Name.title[0].plain_text }} ]  }
+            }}) 
+            await notion.appendChild( columns[i] , blocks );
+
+            Tasks_of_the_day.forEach(t =>{
+                if(t.properties.Unit.select == null){ // not repeating task will be delete
+                    console.log("Delete" , t.properties.Name.title[0].plain_text )
+                    notion.deleteItem(t.id)
+                }
+            })
+        }
+    }
+}
 
 export async function userIn(){
-    var messages = ['Hello!','You came back!',"Hey Darling!"];  
-    channel.send( messages[Math.floor( Math.random() * messages.length )]);
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
     reminders = reminders.filter( data => data.properties.Unit.select == null || ['minute','hour','day'].includes(data.properties.Unit.select.name)    )
     initCrons(reminders); 
     channel.send(`I will let you know 🔔${reminders.length}'s reminders today`)
 
-    var _embed = new MessageEmbed()
-    _embed.setTitle(` ♥ Let's start Today `)
-    _embed = await getWeather( _embed , 'Vancouver, BC');
-
-    // 1. todo 
     try{
+
+         // 1. Random Message 
+        var messages = ['Hello!','You came back!',"Hey Darling!"];  
+        channel.send( messages[Math.floor( Math.random() * messages.length )]);
+
+        // 2. Create Today's log
+        var _embed = new MessageEmbed()
+        _embed.setTitle(` ♥ Let's start Today `)
+        _embed = await getWeather( _embed , 'Vancouver, BC');
+
         var worklog = await getTodaysWorklog(); 
         var columns = await notion.getColumns( worklog ) ; //page
         var day = new Date().getDay()
         day = day == 0 ? 6: day - 1; 
+        addScheduledTasks( columns, day ); 
+
         var [allTodo , leftTodo] =  await getTasks(day, columns ) ;
         var todos = await notion.blocks_to_text(allTodo);     
         _embed.addFields({name : "Tasks", value : todos})
@@ -779,6 +820,7 @@ export async function userIn(){
         var nextColumn = columns[Math.min(day + 1, columns.length)]
         askBusy(10, leftTodo , nextColumn );       
         return { embeds : [ _embed] }
+        
     }catch(error){
         return "Something went wrong 👉"+ error.message
     }
