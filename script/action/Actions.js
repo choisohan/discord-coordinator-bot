@@ -15,7 +15,8 @@ moment.locale('en-ca')
 
 const  puppeteer  = pkg;
 export const yesAction ={}; export const noAction = {};  export const moreAction = {}; 
-export const stored = {datas: null , numb: null}; const intervals = [];  const allCrons= []
+export const stored = {datas: null , numb: null}; const intervals = [];
+var allCrons= []
 
 var now = (DATE) => moment(DATE) 
 var monday  = (DATE) =>  moment().subtract( DATE.getDay()-1,  'days')
@@ -221,6 +222,7 @@ var getCalendar = (wit_datetime ) =>{
 
 
 export async function initCrons( pages ){
+
     pages = pages.filter( d => d.properties.Unit.select == null || ['minute','hour','day'].includes(d.properties.Unit.select.name)    )
     pages.forEach(  async reminder => {
         //var repeat = reminder.properties.Reapeat["multi_select"].map( r => r.name)
@@ -234,8 +236,12 @@ export async function initCrons( pages ){
     })
 }
 
-export async function reinitCron(){
-    //⬜
+export async function restartCron(){
+    console.log("🔔cron set again")
+    allCrons.forEach( cron => cron.stop())
+    allCrons = [] 
+    var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
+    initCrons(reminders); 
 }
 
 async function sendNotification(page_id){
@@ -745,13 +751,7 @@ export async function getTodaysWorklog(){
 //|| isThisWeek(new Date(t.properties["Last Added"].date.start))
 
 export async function botIn(){
-    // When a bot initiate, all the reminder except daily event starts.
-    var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
-    reminders = await reminders.filter(data => data.properties.Unit.select == null || !['minute','hour','day'].includes(data.properties.Unit.select.name)    );
-    initCrons(reminders); 
-   // send(`Hello`)//⬜
-    //channel.send("I came back😛")
-    
+    //send("hi")
 }
 
 async function addScheduledTasks( columns, day ){
@@ -789,10 +789,7 @@ async function addScheduledTasks( columns, day ){
 }
 
 export async function userIn(){
-    var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
-    reminders = reminders.filter( data => data.properties.Unit.select == null || ['minute','hour','day'].includes(data.properties.Unit.select.name)    )
-    initCrons(reminders); 
-    channel.send(`I will let you know 🔔${reminders.length}'s reminders today`)
+    intervals.push( setInterval(restartCron,1000*60*30)  ) //every 30min reset
 
     try{
 
@@ -828,8 +825,8 @@ export async function userIn(){
 
 export async function userOut(){
     var messages = ["Bye! Have a good day!" ,"See ya!"]
-    allCrons.forEach( item => { item.stop() })
-    allCrons = []; 
+    allCrons.forEach( cron => { cron.stop() })
+    intervals.forEach( interval => clearInterval(interval) )
     return messages[Math.floor( Math.random() * messages.length )]
 }
 
