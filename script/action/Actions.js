@@ -659,7 +659,9 @@ export async function getRecipe(_keywords){
 
     moreAction["getRecipe"] = async ()=> {
 
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({
+            args: ['--no-sandbox','--disable-setuid-sandbox']
+          })
         const page = await browser.newPage();
         await page.goto(URL, {waitUntil: 'networkidle2'});
 
@@ -917,7 +919,9 @@ export async function SearchDictionary( mm, entitie , traits ){
 export async function SearchGoogle(mm){
     try{
         var URL = "https://www.google.com/search?q=" + mm ;
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({
+            args: ['--no-sandbox','--disable-setuid-sandbox']
+          })
         const page = await browser.newPage();
         await page.goto(URL, {waitUntil: 'networkidle2'});
         var classList = ['.V3FYCf','.hgKElc','.hb8SAc']
@@ -989,7 +993,9 @@ export async function ReadSlowly( URL ){
 export async function helpEnglish(_word){
     var _embed = new MessageEmbed();
     var URL= "";  var text = ``
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+        args: ['--no-sandbox','--disable-setuid-sandbox']
+      })
     const page = await browser.newPage();
 
     // 0. Get Meaning
