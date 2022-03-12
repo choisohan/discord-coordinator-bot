@@ -790,7 +790,7 @@ export async function getTodaysWorklog(){
 //|| isThisWeek(new Date(t.properties["Last Added"].date.start))
 
 export async function botIn(){
-    //channel.send("Hey I came back!❤️")
+    channel.send("Hey I came back!❤️")
     //send("how's my instagram?")
 
     //userIn()
