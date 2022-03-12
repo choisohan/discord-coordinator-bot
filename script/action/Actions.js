@@ -729,21 +729,23 @@ export async function TellMeAboutSocialStat(_entitie){
         const navigationPromise = page.waitForNavigation({waitUntil: "domcontentloaded"});
         await page.goto(URL);
         await navigationPromise;
-        //await page.waitForSelector('.Y8-fY'); 
+        await page.waitForSelector('.Y8-fY'); 
         stats.instagram = await page.$$eval('.Y8-fY', els => els.map(el => el.textContent ) ); //posts, followers, following
         stats.instagram = stats.instagram[1];
         
+        //⬜ tiwtter not working now
+        /*
         var URL = 'https://twitter.com/happping_min'
         console.log("💛URL", URL )
         await page.goto(URL);
-        await navigationPromise;
+        await navigationPromise; 
            // await page.waitForSelector('.css-4rbku'); 
         //stats.twitter = await page.$$eval('.css-4rbku5', els => els.map(el => el.textContent ).filter(el => el.includes("Followers") ) );
         //stats.twitter = stats.twitter[0]
         console.log("❤️stats", stats )
     
         //await page.screenshot({ path: 'temp/tmp_1.png' })
-
+          */ 
         var _embeded = new MessageEmbed()
         Object.keys(stats).forEach(key =>{
             if(stats[key]){
