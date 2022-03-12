@@ -716,7 +716,10 @@ export async function getRecipe(_keywords){
 }
 
 export async function TellMeAboutSocialStat(_entitie){
+    return 'Sorry, This feature is not available'
+    /*
     try{
+ 
         var stats = {}
         
         const browser = await puppeteer.launch({
@@ -725,16 +728,21 @@ export async function TellMeAboutSocialStat(_entitie){
         const page = await browser.newPage();
     
         var URL = 'https://www.instagram.com/happping_min/'
-        console.log("💛URL", URL )
         const navigationPromise = page.waitForNavigation({waitUntil: "domcontentloaded"});
-        await page.goto(URL);
+        await page.goto(URL,{  
+            waitUntil: "load",  
+            timeout: 0,  // Remove the timeout  
+           });
+        await page.screenshot({ path: 'temp/tmp_1.png' })
         await navigationPromise;
-        await page.waitForSelector('.Y8-fY'); 
+        await page.waitForSelector('.Y8-fY'  ); //,  { timeout: 6000 }
         stats.instagram = await page.$$eval('.Y8-fY', els => els.map(el => el.textContent ) ); //posts, followers, following
-        stats.instagram = stats.instagram[1];
+        //stats.instagram = stats.instagram[1];
+        console.log("🍝stats", stats )
+        
         
         //⬜ tiwtter not working now
-        /*
+
         var URL = 'https://twitter.com/happping_min'
         console.log("💛URL", URL )
         await page.goto(URL);
@@ -742,10 +750,7 @@ export async function TellMeAboutSocialStat(_entitie){
            // await page.waitForSelector('.css-4rbku'); 
         //stats.twitter = await page.$$eval('.css-4rbku5', els => els.map(el => el.textContent ).filter(el => el.includes("Followers") ) );
         //stats.twitter = stats.twitter[0]
-        console.log("❤️stats", stats )
     
-        //await page.screenshot({ path: 'temp/tmp_1.png' })
-          */ 
         var _embeded = new MessageEmbed()
         Object.keys(stats).forEach(key =>{
             if(stats[key]){
@@ -755,9 +760,11 @@ export async function TellMeAboutSocialStat(_entitie){
         await browser.close; 
         return {embeds : [_embeded] }
 
+
     }catch(err){
         return err.message
     }
+    */ 
 
 }
 
@@ -784,7 +791,7 @@ export async function getTodaysWorklog(){
 
 export async function botIn(){
     //channel.send("Hey I came back!❤️")
-    send("how's my instagram?")
+    //send("how's my instagram?")
 }
 
 async function addScheduledTasks( columns, day ){
