@@ -663,12 +663,13 @@ export async function getGIF(search_term){
 }
 
 export async function getRecipe(_keywords){
-    console.log( "👩‍🍳🍚" ,_keywords )
+    console.log( "🌿" )
     var _keyword = _keywords ? _keywords : "healthy"
     var URL = 'https://tasty.co/search?q='+_keyword+'&sort=popular'
     var _selector ='.feed-item__img-wrapper';
-
+    
     moreAction["getRecipe"] = async ()=> {
+        
 
         const browser = await puppeteer.launch({
             args: ['--no-sandbox','--disable-setuid-sandbox']
@@ -684,7 +685,7 @@ export async function getRecipe(_keywords){
 
         await page.goto( alink,{waitUntil: 'networkidle2'})
 
-        const recipe = {};
+        const recipe = {}; 
 
         recipe.ingredients = await page.$$eval('.ingredient', el => el.map( el=> el.textContent)  )
         recipe.ingredients = Variable.arrayToString(recipe.ingredients)
@@ -792,7 +793,7 @@ export async function getTodaysWorklog(){
 
 export async function botIn(){
     channel.send("Hey I came back!❤️")
-    //send("how's my instagram?")
+    //send("")
 
     //userIn()
 }
@@ -942,7 +943,7 @@ export async function SearchDictionary( mm, entitie , traits ){
                 _embed.setTitle(header[header.type].text[0].plain_text);
                 _embed.setDescription(  foundInfo  );
                 channel.send('Maybe check this out?')
-                return await {embeds : [_embed] }
+                return {embeds : [_embed] }
             }
 
         }

@@ -46,6 +46,7 @@ export async function send( message , reference ){
     var traits = Wit.traitFilter(traits); 
     console.log("💖", entities , intents , traits)
     var findDB =  await Wit.findIntention( entities, intents, traits, DB ) ; 
+    console.log("🐸", findDB )
 
     if('script' in findDB ){
       var response = await eval(findDB.script[0] );

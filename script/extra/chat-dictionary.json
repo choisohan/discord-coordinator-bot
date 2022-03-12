@@ -68,7 +68,7 @@
     "script": ["Action.createNewTask(entities)"]
   },
   {
-    "entities" :["cook"], "intents" : ["request_recipe"] , "traits" :{} ,
+    "entities" :[], "intents" : ["request_recipe"] , "traits" :{} ,
     "script": ["Action.getRecipe( entities['search_query'] )"]
   },
   {
