@@ -18,9 +18,9 @@ export const yesAction ={}; export const noAction = {};  export const moreAction
 export const stored = {datas: null , numb: null}; const intervals = [];
 var allCrons= []
 
-var now = (DATE) => moment(DATE) 
-var monday  = (DATE) =>  moment().subtract( DATE.getDay()-1,  'days')
-var sunday  = (DATE) =>  moment().add(  7-DATE.getDay(),  'days')
+var now = (DATE) => moment(DATE).tz(process.env.TIMEZONE)
+var monday  = (DATE) =>  moment().tz(process.env.TIMEZONE).subtract( DATE.getDay()-1,  'days')
+var sunday  = (DATE) =>  moment().tz(process.env.TIMEZONE).add(  7-DATE.getDay(),  'days')
 var getDayMondayStart = (MOMENT) => MOMENT.format('d')-1 > 0 ? MOMENT.format('d')-1 : 6
 var mmdd = (MOMENT) =>{
     var week = MOMENT.format('L').split('-');
@@ -505,7 +505,7 @@ var witTimeToDate = _witTime =>{
 export var TellMeAboutTasks = async (_entitie) =>{
     try{
         var date = 'datetime' in _entitie ? witTimeToDate(_entitie.datetime) : new Date()
-        var day =  date.getDay();
+        var day =  moment().tz(process.env.TIMEZONE).format('d')
         day = day == 0 ? 6: day - 1;  //start of the week is monday
     
         var worklog = await getTodaysWorklog();
@@ -792,6 +792,8 @@ export async function getTodaysWorklog(){
 export async function botIn(){
     //channel.send("Hey I came back!❤️")
     //send("how's my instagram?")
+
+    //userIn()
 }
 
 async function addScheduledTasks( columns, day ){
@@ -844,8 +846,10 @@ export async function userIn(){
 
         var worklog = await getTodaysWorklog(); 
         var columns = await notion.getColumns( worklog ) ; //page
-        var day = new Date().getDay()
+        var day = moment().tz(process.env.TIMEZONE).format('d')
+        //new Date().getDay()
         day = day == 0 ? 6: day - 1; 
+        console.log(day)
         addScheduledTasks( columns, day ); 
 
         var [allTodo , leftTodo] =  await getTasks(day, columns ) ;
