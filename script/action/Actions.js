@@ -238,6 +238,7 @@ export async function initCrons( pages ){
 
 export async function restartCron(){
     //console.log("🔔cron set again")
+    channel.send("🔔cron set again")
     allCrons.forEach( cron => cron.stop())
     allCrons = [] 
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
