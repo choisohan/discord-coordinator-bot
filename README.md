@@ -88,13 +88,13 @@ empty(prop("Unit")) ? if(minute(prop("Date")) + minute(prop("Date")) == 0, forma
 
 - _hour_ : 
 ```
-empty(prop("Unit")) ? if(hour(prop("Date")) + hour(prop("Date")) == 0, format(hour(prop("Edited"))), format(hour(prop("Date")))) : if(prop("Unit") == "hour", "*/" + format(if(empty(prop("Recurring")), 1, prop("Recurring"))), if(prop("Unit") != "minute", format(hour(prop("Date"))), if(prop("Unit") != "hour", "*", format(hour(prop("Date"))))))
+empty(prop("Unit")) ? if(hour(prop("Date")) + hour(prop("Date")) == 0, format(1 + hour(prop("Edited"))), format(1 + hour(prop("Date")))) : if(prop("Unit") == "hour", "*/" + format(if(empty(prop("Recurring")), 1, prop("Recurring"))), if(prop("Unit") != "minute", if(empty(prop("Date")), "*", format(hour(prop("Date")))), if(prop("Unit") != "hour", "*", format(hour(prop("Date"))))))
 ```
 
 
 - _day : 
 ```
-empty(prop("Unit")) ? if(day(prop("Date")) + day(prop("Date")) == 0, if(0 != day(prop("Edited")), format(day(prop("Edited"))), "*"), format(day(prop("Date")))) : if(prop("Unit") == "day", "*/" + format(if(empty(prop("Recurring")), 1, prop("Recurring"))), if(prop("Unit") != "minute" or prop("Unit") != "hour", if(prop("Unit") == "week", format(prop("Recurring") * 7), if(prop("Unit") == "month", format(day(prop("Date"))), if(prop("Unit") == "year", format(month(prop("Date"))), "*"))), "_"))
+empty(prop("Unit")) ? if(day(prop("Date")) + day(prop("Date")) == 0, if(0 != day(prop("Edited")), format(day(prop("Edited"))), "*"), format(day(prop("Date")))) : if(prop("Unit") == "day", "*/" + format(if(empty(prop("Recurring")), 1, prop("Recurring"))), if(prop("Unit") != "minute" or prop("Unit") != "hour", if(prop("Unit") == "week", if(empty(prop("Recurring")), if(empty(prop("Week")) == false, "*", format(day(prop("Edited")))), if(empty(prop("Week")), format(prop("Recurring") * 7), "*")), if(prop("Unit") == "month", format(day(prop("Date"))), if(prop("Unit") == "year", format(1 + month(prop("Date"))), "*"))), "_"))
 ```
 - _month :
 ```
