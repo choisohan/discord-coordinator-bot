@@ -238,7 +238,7 @@ export async function initCrons( pages ){
 
 export async function restartCron(){
     //console.log("🔔cron set again")
-    channel.send("🔔cron set again")
+    //channel.send("🔔cron set again")
     allCrons.forEach( cron => cron.stop())
     allCrons = [] 
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
@@ -836,7 +836,7 @@ export async function userIn(){
 
     try{
         restartCron()
-        intervals.push( setInterval( ()=>{restartCron()},1000*60*30)  ) //every 30min reset
+        intervals.push( setInterval( ()=>{restartCron()},1000*60*60)  ) //every 1 hour reset
     
          // 1. Random Message 
         var messages = ['Hello!','You came back!',"Hey Darling!"];  
