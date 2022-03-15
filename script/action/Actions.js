@@ -928,7 +928,7 @@ export async function SearchDictionary( mm, entitie , traits ){
         var Headers = await notion.getChildren( myDictionary );
         Headers = Headers.filter( header => header[header.type].text.length > 0 && header.has_children )
         var searchThese =[];
-        Object.values(entitie).forEach( text => text.toLowerCase().split(" ").forEach( t => searchThese.push(t) ))
+        Object.values(entitie).forEach( text => text.substring().split(" ").forEach( t => searchThese.push(t) ))
         Headers =  Headers.filter( header =>{
             var header_keywords = header[header.type].text[0].plain_text.split(" ").map( text => text.toLowerCase() );
             return Variable.anyisIn(searchThese , header_keywords ); 
