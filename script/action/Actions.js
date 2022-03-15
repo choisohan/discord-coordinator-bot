@@ -801,14 +801,17 @@ export async function getTodaysWorklog(){
 //|| isThisWeek(new Date(t.properties["Last Added"].date.start))
 
 export async function botIn(){
-    channel.send("Hey I came back!❤️")
-    restartCron()
-    intervals.push( setInterval( ()=>{restartCron()} , 1000 * 60 * 60)  ) //every 1 hour reset
-    //userIn()
-    //send("can you remind me every 1 hour?")
-   // const currentHour = moment().tz(process.env.TIMEZONE).format('H');
-   // console.log(currentHour )
-
+   channel.send("Hey I came back!❤️")
+    // 0. get the last message on the channel and if it's today, -> cron, if not, skip 
+    Promise.resolve( await channel.messages.fetch({limit: 1}) )
+        .then(messages =>{
+            var lastmsg_date = moment(messages.last().createdTimestamp).tz(process.env.TIMEZONE)
+            var now = moment().tz(process.env.TIMEZONE)
+            if(lastmsg_date.format('MMDD') == now.format('MMDD') ){
+                restartCron()
+                intervals.push( setInterval( ()=>{ restartCron()} , 1000 * 60 * 60)  ) //every 1 hour reset
+            }
+        })
 }
 
 async function addScheduledTasks( columns, day ){
@@ -848,6 +851,8 @@ async function addScheduledTasks( columns, day ){
 export async function userIn(){
 
     try{
+        restartCron()
+        intervals.push( setInterval( ()=>{ restartCron()} , 1000 * 60 * 60)  ) //every 1 hour reset
 
     
          // 1. Random Message 
