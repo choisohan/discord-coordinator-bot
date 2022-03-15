@@ -10,7 +10,7 @@ import pkg from 'puppeteer';
 import * as Variable from '../extra/util.js';
 import axios from 'axios';
 import extractor from 'unfluff'
-import {yesEmojies, noEmojies, send} from './Chat.js'
+import {yesEmojies, noEmojies} from './Chat.js'
 moment.locale('en-ca')
 
 const  puppeteer  = pkg;
@@ -237,12 +237,12 @@ export async function initCrons( pages ){
 }
 
 export async function restartCron(){
-    //console.log("🔔cron set again")
-    //channel.send("🔔cron set again")
     allCrons.forEach( cron => cron.stop())
     allCrons = [] 
     var reminders = await notion.datas.filter( data => notion.groupFilter(data,"Reminder" ) )
-    initCrons(reminders); 
+    const currentHour = moment().tz(process.env.TIMEZONE).format('H');
+    const isDaytime = currentHour <= 23 && currentHour >= 9;
+    if( isDaytime ){ initCrons(reminders); }
 }
 
 async function sendNotification(page_id){
@@ -338,11 +338,15 @@ export async function createReminder(entitie){
         //it's recurring task
         style.Unit = Object.keys(entitie.duration)[0] ;
         style.Recurring = Object.values(entitie.duration)[0] ;
+        console.log( style.Recurring )
     }
     if('datetime' in entitie ){
         //it's one time event
         var CAL = getCalendar(entitie.datetime);
-        style.Date = {start : CAL.year +"-" + CAL.month +"-"+CAL.day , end: null }
+        console.log(CAL)
+       // style.Date = {start : CAL.year +"-" + CAL.month +"-"+CAL.day , end: null }
+       style.Date = {start : entitie.datetime , end: null }
+        //console.log(CAL , style.Date )
     }
 
     yesAction["createReminder"] = async() =>{
@@ -358,19 +362,24 @@ export async function createReminder(entitie){
         },null, null , process.env.TIMEZONE);
         allCrons.push(newCron);
         newCron.start();
-        const _embed =  new MessageEmbed().setDescription(`[⏰${_agenda}](${page.url})`)
+        const _embed =  new MessageEmbed().setDescription(`[🔔${_agenda}](${page.url})`)
         channel.send({embeds : [_embed] })
         return "I added a new reminder for you!"
     }
     // 1. check up message
-    var _newEmbed = new MessageEmbed();
-    _newEmbed.setTitle("New Reminder");
-    Object.keys(style).forEach( k=>{
-        _newEmbed.addFields({name : k , value :style[k].toString(),inline:true})
-    })
+    var _embed = new MessageEmbed();
+    _embed.setTitle("🔔New Reminder");
+    var text;
+    if('duration' in entitie){
+        text = `${ style.Name } : every ${ style.Recurring.toString()+' ' + style.Unit.toString()  } `
+    }
+    if('datetime' in entitie){
+        text = `I can remind you on ${ style.Date.start  } for ${ style.Name }`
+    }
+    _embed.setDescription(text);
     
     channel.send("Want me to create like this?")
-    return {embeds : [_newEmbed] }
+    return {embeds : [_embed] }
 
 }
 
@@ -793,10 +802,13 @@ export async function getTodaysWorklog(){
 
 export async function botIn(){
     channel.send("Hey I came back!❤️")
-    //send("")
     restartCron()
     intervals.push( setInterval( ()=>{restartCron()} , 1000 * 60 * 60)  ) //every 1 hour reset
     //userIn()
+    //send("can you remind me every 1 hour?")
+   // const currentHour = moment().tz(process.env.TIMEZONE).format('H');
+   // console.log(currentHour )
+
 }
 
 async function addScheduledTasks( columns, day ){
