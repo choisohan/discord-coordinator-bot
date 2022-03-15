@@ -11,7 +11,7 @@ export var yesEmojies = ['👍','😍','🙏','❤️',"💯","👌","💖","�
 export var noEmojies = ['😑','😬','👎']
 
 export async function send( message , reference ){
-  var mm = message.toLowerCase();
+  var mm = message.substring();
   var words =  mm.split(' ');
   var DB = !reference ? talkDB : replyDB;
   var refMessage ;

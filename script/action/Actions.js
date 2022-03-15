@@ -273,10 +273,10 @@ async function sendNotification(page_id){
 }
 
 export async function respondYes( _entitie, _id ){
-    console.log("YES")
     if (_id){
         try{
             var respond = await yesAction[_id](_entitie) ;
+            delete yesAction[_id]
             return respond; 
         }catch(err){
             return "Sorry, I fell asleep. What do you want?"
@@ -374,7 +374,7 @@ export async function createReminder(entitie){
         text = `${ style.Name } : every ${ style.Recurring.toString()+' ' + style.Unit.toString()  } `
     }
     if('datetime' in entitie){
-        text = `I can remind you on ${ style.Date.start  } for ${ style.Name }`
+        text = `I can remind you ** ${ moment(style.Date.start).fromNow() } ** for ** ${ style.Name } ** `
     }
     _embed.setDescription(text);
     
@@ -535,7 +535,7 @@ export var TellMeAboutTasks = async (_entitie) =>{
         text += lineChange += `[📙${worklog.properties.Name.title[0].plain_text}](${worklog.url})`
         _newEmbed.setDescription( text ); 
         var nextColumn = columns[Math.min(day + 1, columns.length)]
-        askBusy( 10 ,leftTodo , nextColumn ); 
+        setTimeout(()=>{askBusy( 10 ,leftTodo , nextColumn )}, 1000)
         return {embeds : [_newEmbed] }
         
     }catch(error){
@@ -914,7 +914,7 @@ Do you want me to move some tasks to tmr?`];
     }
     else if( tasks.length < 4 ){
         var TASKS_URL = `https://www.notion.so/happpingmin/30ddc8bbffcc481cb702da35789f3cf5?v=f6894f5cc1d246a0b49179d270748e2e`
-        channel.send(`You seems like free, check out Tasks Page`)
+        channel.send(`You seem like quite free today. Maybe it is time to reopen the old task list 😆💕`)
         channel.send({embeds : [new MessageEmbed().setDescription(`[Tasks](${TASKS_URL})`) ]})
     }
 }
