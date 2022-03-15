@@ -794,7 +794,8 @@ export async function getTodaysWorklog(){
 export async function botIn(){
     channel.send("Hey I came back!❤️")
     //send("")
-
+    restartCron()
+    intervals.push( setInterval( ()=>{restartCron()} , 1000 * 60 * 60)  ) //every 1 hour reset
     //userIn()
 }
 
@@ -835,8 +836,7 @@ async function addScheduledTasks( columns, day ){
 export async function userIn(){
 
     try{
-        restartCron()
-        intervals.push( setInterval( ()=>{restartCron()},1000*60*60)  ) //every 1 hour reset
+
     
          // 1. Random Message 
         var messages = ['Hello!','You came back!',"Hey Darling!"];  
